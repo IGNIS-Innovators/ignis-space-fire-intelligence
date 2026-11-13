@@ -76,11 +76,12 @@ frontend/dist-ssr/
 # ----------------------------------------------------------------------------
 # Datasets & ML Artifacts
 # ----------------------------------------------------------------------------
-# Ignore raw & heavy processed datasets; preserve sample templates and .gitkeep
+# Ignore raw & heavy processed datasets; preserve sample templates, cleaned CSVs, and .gitkeep
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/*_cleaned.csv
 
 # Machine learning model weights / checkpoints
 *.pt
