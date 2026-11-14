@@ -31,7 +31,7 @@ export const Visualization: React.FC = () => {
   const [previewDiameter, setPreviewDiameter] = useState(2.0);
 
   useEffect(() => {
-    dataSource.listExperiments().then(setExperiments);
+    dataSource.listExperiments().then((res) => setExperiments(res.experiments));
   }, []);
 
   const chartOptions = [

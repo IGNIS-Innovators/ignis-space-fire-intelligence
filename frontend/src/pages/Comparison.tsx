@@ -4,10 +4,9 @@ import {
   GitCompare,
   AlertTriangle,
   CheckCircle2,
-  ArrowRight,
   ExternalLink,
-  Flame,
   Info,
+  RotateCcw,
 } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -23,17 +22,18 @@ export const Comparison: React.FC = () => {
   const [selectedIdB, setSelectedIdB] = useState<string>('');
   const [comparison, setComparison] = useState<ComparisonViewModel | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    dataSource.listExperiments().then((list) => {
+    dataSource.listExperiments({ pageSize: 100 }).then((res) => {
+      const list = res.experiments;
       setExperiments(list);
 
       const paramA = searchParams.get('idA');
       const paramB = searchParams.get('idB');
 
-      const idA = paramA && list.some((e) => e.id === paramA) ? paramA : list[0]?.id || '';
-      // Default idB to another FLEX experiment (e.g. index 1)
-      const idB = paramB && list.some((e) => e.id === paramB) ? paramB : list[1]?.id || list[0]?.id || '';
+      const idA = paramA && list.some((e) => e.id === paramA) ? paramA : list[0]?.id || 'FLEX-1';
+      const idB = paramB && list.some((e) => e.id === paramB) ? paramB : list[1]?.id || list[0]?.id || 'FLEX-70';
 
       setSelectedIdA(idA);
       setSelectedIdB(idB);
@@ -46,10 +46,13 @@ export const Comparison: React.FC = () => {
 
   const runComparison = async (idA: string, idB: string) => {
     setLoading(true);
+    setError(null);
     try {
       const res = await dataSource.compareExperiments([idA, idB]);
       setComparison(res);
       setSearchParams({ idA, idB });
+    } catch (err: any) {
+      setError(err?.message || `Failed to compare ${idA} and ${idB}`);
     } finally {
       setLoading(false);
     }
@@ -68,9 +71,25 @@ export const Comparison: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         eyebrow="DIFF MATRIX / 04"
-        title="Experiment Comparison"
-        subtitle="Compare verified conditions and observed endpoints across microgravity combustion tests with automated scientific compatibility evaluation."
+        title="Compare Experiments"
+        subtitle="Compare verified parameters and observed endpoints across authentic NASA microgravity combustion trials with automated scientific compatibility evaluation."
       />
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs font-mono flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="text-rose-400" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => runComparison(selectedIdA, selectedIdB)}
+            className="btn-secondary text-xs px-3 py-1 flex items-center gap-1"
+          >
+            <RotateCcw size={12} />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
 
       {/* Select Experiments Bar */}
       <div className="glass-panel rounded-2xl p-5">
@@ -78,7 +97,7 @@ export const Comparison: React.FC = () => {
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-mono uppercase text-gray-400 block mb-1.5">
-                Experiment A
+                Experiment A (Reference Record)
               </label>
               <select
                 value={selectedIdA}
@@ -96,7 +115,7 @@ export const Comparison: React.FC = () => {
 
             <div>
               <label className="text-xs font-mono uppercase text-gray-400 block mb-1.5">
-                Experiment B
+                Experiment B (Comparison Subject)
               </label>
               <select
                 value={selectedIdB}
@@ -116,10 +135,10 @@ export const Comparison: React.FC = () => {
           <button
             onClick={handleCompareClick}
             disabled={loading}
-            className="btn-primary text-xs px-6 py-3 rounded-xl lg:self-end flex items-center justify-center gap-2"
+            className="btn-primary text-xs px-6 py-3 rounded-xl lg:self-end flex items-center justify-center gap-2 font-mono"
           >
             <GitCompare size={15} />
-            <span>Compare Tests</span>
+            <span>{loading ? 'Evaluating Alignment...' : 'Compare Tests'}</span>
           </button>
         </div>
       </div>

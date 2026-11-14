@@ -13,31 +13,43 @@ import { VERIFIED_AGGREGATES } from '../../data/verifiedAggregates';
 
 interface OutcomesChartProps {
   height?: number;
+  outcomes?: {
+    extinction: number;
+    disruption: number;
+    completion: number;
+  };
+  total?: number;
 }
 
-export const OutcomesChart: React.FC<OutcomesChartProps> = ({ height = 240 }) => {
-  const outcomes = VERIFIED_AGGREGATES.flex.outcomes;
-  const total = VERIFIED_AGGREGATES.flex.totalSourceRows;
+export const OutcomesChart: React.FC<OutcomesChartProps> = ({
+  height = 240,
+  outcomes = VERIFIED_AGGREGATES.flex.outcomes,
+  total = VERIFIED_AGGREGATES.flex.totalSourceRows,
+}) => {
+  const extinctionCount = outcomes.extinction;
+  const disruptionCount = outcomes.disruption;
+  const completionCount = outcomes.completion;
+  const flexTotal = extinctionCount + disruptionCount + completionCount || total || 274;
 
   const data = [
     {
       name: 'Extinction',
-      count: outcomes.extinction,
-      percentage: ((outcomes.extinction / total) * 100).toFixed(1),
+      count: extinctionCount,
+      percentage: ((extinctionCount / flexTotal) * 100).toFixed(1),
       color: '#FF641C',
       description: 'Radiative or diffusive flame quenching prior to full burnout',
     },
     {
       name: 'Disruption',
-      count: outcomes.disruption,
-      percentage: ((outcomes.disruption / total) * 100).toFixed(1),
+      count: disruptionCount,
+      percentage: ((disruptionCount / flexTotal) * 100).toFixed(1),
       color: '#36B8FF',
       description: 'Micro-explosive droplet shattering or tether detachment',
     },
     {
       name: 'Completion',
-      count: outcomes.completion,
-      percentage: ((outcomes.completion / total) * 100).toFixed(1),
+      count: completionCount,
+      percentage: ((completionCount / flexTotal) * 100).toFixed(1),
       color: '#35D2A0',
       description: 'Uninterrupted combustion through complete droplet vaporization',
     },
@@ -48,7 +60,7 @@ export const OutcomesChart: React.FC<OutcomesChartProps> = ({ height = 240 }) =>
       <div className="flex items-center justify-between mb-3 text-xs font-mono">
         <span className="text-gray-400">Recorded Test End Modes</span>
         <span className="text-cyan-400/90 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/40">
-          PSI-69 · n = {total} documented tests
+          PSI-69 · n = {flexTotal} documented tests
         </span>
       </div>
 
@@ -98,8 +110,8 @@ export const OutcomesChart: React.FC<OutcomesChartProps> = ({ height = 240 }) =>
       </div>
 
       <div className="mt-3 pt-2 border-t border-[#162338] flex items-center justify-between text-[11px] font-mono text-gray-400">
-        <span>FLEX PSI-69 verified source aggregate</span>
-        <span>Sum = {total} rows</span>
+        <span>FLEX termination distributions</span>
+        <span>Extinction: {((extinctionCount / flexTotal) * 100).toFixed(1)}%</span>
       </div>
     </div>
   );

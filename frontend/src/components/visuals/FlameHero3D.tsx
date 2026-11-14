@@ -138,7 +138,7 @@ export const FlameHero3D: React.FC<{ className?: string }> = ({ className = 'h-f
       <div className="absolute bottom-3 right-4 pointer-events-none z-10">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono tracking-wider text-cyan-300/90 bg-[#070D1B]/80 border border-cyan-500/25 backdrop-blur-md">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-          Conceptual 3D animation · not NASA experimental footage
+          Illustrative 3D visualization · not a physics simulation
         </span>
       </div>
     </div>

@@ -1,6 +1,8 @@
-import React from 'react';
-import { Menu, Search, Bell, Database } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, Search, Bell, Database, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { dataSource } from '../../services/dataSource';
+import { HealthViewModel } from '../../types/experiment';
 
 interface TopBarProps {
   onOpenSidebar: () => void;
@@ -8,6 +10,11 @@ interface TopBarProps {
 
 export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
   const navigate = useNavigate();
+  const [health, setHealth] = useState<HealthViewModel | null>(null);
+
+  useEffect(() => {
+    dataSource.getHealth().then(setHealth).catch(() => null);
+  }, []);
 
   const handleGlobalSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -17,6 +24,8 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
       }
     }
   };
+
+  const isHealthy = health?.status === 'healthy';
 
   return (
     <header className="h-16 px-4 lg:px-8 border-b border-[#213047] bg-[#070B15]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between gap-4">
@@ -32,7 +41,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
         <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-gray-400">
           <span>NASA PSI</span>
           <span className="text-gray-600">/</span>
-          <span className="text-cyan-400 font-medium">IGNIS Intelligence System</span>
+          <span className="text-cyan-400 font-medium">IGNIS Space Fire Intelligence</span>
         </div>
       </div>
 
@@ -42,22 +51,37 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search experiments, fuels, materials..."
+            placeholder="Search experiments, fuels, materials (Enter)..."
             onKeyDown={handleGlobalSearch}
             className="w-full pl-9 pr-12 py-1.5 rounded-lg bg-[#0F1827] border border-[#213047] text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-ignis-orange focus:ring-1 focus:ring-ignis-orange"
           />
           <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-mono bg-black/40 text-gray-400 border border-gray-700">
-            Ctrl+K
+            ↵
           </kbd>
         </div>
       </div>
 
-      {/* Right User Actions & Avatar (matching reference) */}
+      {/* Right User Actions & Status */}
       <div className="flex items-center gap-3">
-        {/* Offline / Provenance Indicator */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono bg-[#0B1526] border border-[#213047] text-cyan-300">
-          <Database size={13} className="text-cyan-400" />
-          <span>PSI Data Feed</span>
+        {/* Dynamic Live Health / Provenance Indicator */}
+        <div
+          className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
+            isHealthy
+              ? 'bg-[#0B1A28] border-emerald-500/40 text-emerald-300'
+              : 'bg-[#151520] border-amber-500/40 text-amber-300'
+          }`}
+        >
+          {isHealthy ? (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>LIVE API (Port 8000)</span>
+            </>
+          ) : (
+            <>
+              <Database size={13} className="text-amber-400" />
+              <span>OFFLINE / FIXTURE</span>
+            </>
+          )}
         </div>
 
         {/* Notifications */}
@@ -69,17 +93,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
           <span className="w-1.5 h-1.5 rounded-full bg-ignis-orange absolute top-1.5 right-1.5 ring-2 ring-[#070B15]" />
         </button>
 
-        {/* Researcher Avatar — exact name from screenshot reference */}
+        {/* Researcher Avatar */}
         <div className="flex items-center gap-2.5 pl-2 border-l border-[#213047]/80">
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-400 flex items-center justify-center font-bold text-xs text-white font-mono shadow-[0_0_10px_rgba(54,184,255,0.4)]">
-            MM
+            NASA
           </div>
           <div className="hidden sm:flex flex-col text-left">
-            <span className="text-xs font-semibold text-white leading-tight">
-              Mohammed Magdy
+            <span className="text-xs font-semibold text-white leading-tight font-mono">
+              Research Station
             </span>
             <span className="text-[10px] text-gray-400 font-mono leading-tight">
-              Researcher
+              Space Apps 2026
             </span>
           </div>
         </div>

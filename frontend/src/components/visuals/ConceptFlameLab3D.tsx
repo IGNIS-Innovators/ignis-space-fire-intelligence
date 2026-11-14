@@ -185,7 +185,7 @@ export const ConceptFlameLab3D: React.FC<ConceptFlameLab3DProps> = ({
 
       <div className="absolute bottom-3 right-3 pointer-events-none z-10">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono text-amber-300/90 bg-[#070D1B]/80 border border-amber-500/25 backdrop-blur-md">
-          3D conceptual visualization · not experimental measurement
+          Illustrative 3D visualization · not a physics simulation
         </span>
       </div>
     </div>

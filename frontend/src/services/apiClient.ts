@@ -1,12 +1,7 @@
 // Central API client adhering to Section 8 of the Master Prompt
-// Only calls the approved 5 endpoints:
-// GET  /api/overview
-// GET  /api/experiments
-// POST /api/compare
-// POST /api/predict
-// GET  /api/insights
+// Connects to FastAPI backend running at http://localhost:8000
 
-const DEFAULT_BASE_URL = 'http://localhost:8000';
+const DEFAULT_BASE_URL = 'http://localhost:8000/api';
 const DEFAULT_TIMEOUT_MS = 6000;
 
 export class ApiError extends Error {
@@ -29,13 +24,24 @@ export function getApiBaseUrl(): string {
   return DEFAULT_BASE_URL;
 }
 
+export function buildApiUrl(endpoint: string): string {
+  const base = getApiBaseUrl().replace(/\/+$/, '');
+  let path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  if (base.endsWith('/api') && path.startsWith('/api/')) {
+    path = path.slice(4);
+  } else if (!base.endsWith('/api') && !path.startsWith('/api/')) {
+    path = `/api${path}`;
+  }
+  return `${base}${path}`;
+}
+
 export async function apiRequest<T>(
   endpoint: string,
   method: 'GET' | 'POST' = 'GET',
   body?: unknown
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  const url = buildApiUrl(endpoint);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
@@ -66,7 +72,11 @@ export async function apiRequest<T>(
         errorDetails = await response.text();
       }
       throw new ApiError(
-        `API request failed with status ${response.status}`,
+        `API request failed with status ${response.status}: ${
+          typeof errorDetails === 'object' && errorDetails && 'detail' in errorDetails
+            ? JSON.stringify((errorDetails as any).detail)
+            : response.statusText
+        }`,
         response.status,
         errorDetails
       );

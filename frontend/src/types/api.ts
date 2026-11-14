@@ -5,14 +5,19 @@ import {
   InsightViewModel,
   PredictionInputs,
   PredictionResult,
+  PaginatedExperiments,
+  ExperimentQueryParams,
+  HealthViewModel,
 } from './experiment';
 
 export interface IgnisDataSource {
   getOverview(): Promise<OverviewViewModel>;
-  listExperiments(): Promise<Experiment[]>;
-  compareExperiments(ids: [string, string]): Promise<ComparisonViewModel>;
-  getInsights(): Promise<InsightViewModel[]>;
+  listExperiments(params?: ExperimentQueryParams): Promise<PaginatedExperiments>;
+  getExperiment(id: string): Promise<Experiment>;
+  compareExperiments(ids: string[]): Promise<ComparisonViewModel>;
+  getInsights(category?: string): Promise<InsightViewModel[]>;
   predictScenario(inputs: PredictionInputs): Promise<PredictionResult>;
+  getHealth(): Promise<HealthViewModel>;
 }
 
 export interface ApiClientConfig {

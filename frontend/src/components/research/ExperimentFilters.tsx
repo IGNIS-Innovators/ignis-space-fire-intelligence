@@ -14,6 +14,8 @@ interface ExperimentFiltersProps {
   onReset: () => void;
   totalCount: number;
   filteredCount: number;
+  flexCount?: number;
+  bassCount?: number;
 }
 
 export const ExperimentFilters: React.FC<ExperimentFiltersProps> = ({
@@ -28,11 +30,13 @@ export const ExperimentFilters: React.FC<ExperimentFiltersProps> = ({
   onReset,
   totalCount,
   filteredCount,
+  flexCount = 274,
+  bassCount = 129,
 }) => {
   const investigationOptions = [
     { id: 'ALL', label: 'All Datasets', count: totalCount },
-    { id: 'PSI-69', label: 'FLEX (Droplets)', count: 25 },
-    { id: 'PSI-25', label: 'BASS-II (Solids)', count: 15 },
+    { id: 'PSI-69', label: 'FLEX (Droplets)', count: flexCount },
+    { id: 'PSI-25', label: 'BASS-II (Solids)', count: bassCount },
   ];
 
   return (
@@ -48,7 +52,7 @@ export const ExperimentFilters: React.FC<ExperimentFiltersProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search by test ID, fuel, material, or termination outcome..."
+            placeholder="Search all 403 NASA trials by ID, fuel, material, PI, or run number..."
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-ignis-surface-2 border border-[#213047] text-ignis-text text-sm placeholder-gray-500 focus:outline-none focus:border-ignis-orange focus:ring-1 focus:ring-ignis-orange transition-all font-mono"
           />
         </div>
@@ -79,9 +83,13 @@ export const ExperimentFilters: React.FC<ExperimentFiltersProps> = ({
               onChange={(e) => onFuelOrMaterialChange(e.target.value)}
               className="bg-ignis-surface-2 border border-[#213047] rounded-lg px-2.5 py-1.5 text-gray-300 focus:outline-none focus:border-ignis-orange"
             >
-              <option value="ALL">All Fuels</option>
+              <option value="ALL">All Fuels & Materials</option>
               <option value="Methanol">Methanol</option>
               <option value="Heptane">Heptane</option>
+              <option value="PMMA">PMMA</option>
+              <option value="SIBAL">SIBAL</option>
+              <option value="Nomex">Nomex</option>
+              <option value="Wax">Wax</option>
             </select>
           )}
 
@@ -98,7 +106,7 @@ export const ExperimentFilters: React.FC<ExperimentFiltersProps> = ({
             </select>
           )}
 
-          <span className="text-[11px] text-gray-500 pl-2">
+          <span className="text-[11px] text-gray-400 pl-2">
             Showing <strong className="text-white">{filteredCount}</strong> of {totalCount} records
           </span>
         </div>

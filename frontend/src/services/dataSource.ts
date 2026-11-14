@@ -6,16 +6,37 @@ import {
   InsightViewModel,
   PredictionInputs,
   PredictionResult,
+  PaginatedExperiments,
+  ExperimentQueryParams,
+  HealthViewModel,
 } from '../types/experiment';
 import { apiRequest } from './apiClient';
+import {
+  transformOverviewResponse,
+  transformPaginatedExperiments,
+  transformBackendDetail,
+  transformCompareResponse,
+  buildPredictionPayload,
+  transformPredictionResponse,
+  transformInsightsResponse,
+  transformHealthResponse,
+} from './apiAdapter';
 import { fixtureAdapter } from './fixtureAdapter';
 
 class DataSourceManager implements IgnisDataSource {
-  private getMode(): 'mock' | 'api' | 'auto' {
-    const mode = (import.meta.env.VITE_DATA_MODE || 'auto').toLowerCase();
-    if (mode === 'api') return 'api';
-    if (mode === 'mock') return 'mock';
-    return 'auto';
+  public getMode(): 'mock' | 'api' | 'auto' {
+    const saved = localStorage.getItem('ignis_data_mode');
+    if (saved === 'mock' || saved === 'api' || saved === 'auto') {
+      return saved;
+    }
+    const envMode = (import.meta.env.VITE_DATA_MODE || 'api').toLowerCase();
+    if (envMode === 'mock') return 'mock';
+    if (envMode === 'auto') return 'auto';
+    return 'api'; // default development behavior uses the real backend
+  }
+
+  public setMode(mode: 'mock' | 'api' | 'auto') {
+    localStorage.setItem('ignis_data_mode', mode);
   }
 
   async getOverview(): Promise<OverviewViewModel> {
@@ -25,61 +46,100 @@ class DataSourceManager implements IgnisDataSource {
     }
 
     try {
-      // GET /api/overview
-      const data = await apiRequest<OverviewViewModel>('/api/overview', 'GET');
-      return { ...data, dataSource: 'api' };
+      const data = await apiRequest<any>('/api/overview', 'GET');
+      return transformOverviewResponse(data);
     } catch (err) {
       if (mode === 'api') throw err;
-      // Auto fallback to fixture
-      return fixtureAdapter.getOverview();
+      // In auto mode, if network completely unreachable, alert caller rather than silent falsification
+      throw err;
     }
   }
 
-  async listExperiments(): Promise<Experiment[]> {
+  async listExperiments(params?: ExperimentQueryParams): Promise<PaginatedExperiments> {
     const mode = this.getMode();
     if (mode === 'mock') {
-      return fixtureAdapter.listExperiments();
+      return fixtureAdapter.listExperiments(params);
+    }
+
+    const queryParts: string[] = [];
+    if (params?.page) queryParts.push(`page=${params.page}`);
+    if (params?.pageSize) queryParts.push(`page_size=${params.pageSize}`);
+    if (params?.investigation && params.investigation !== 'ALL') {
+      // Map frontend chip IDs to backend names if needed
+      const invName = params.investigation === 'PSI-69' ? 'FLEX' : params.investigation === 'PSI-25' ? 'BASS-II' : params.investigation;
+      queryParts.push(`investigation=${encodeURIComponent(invName)}`);
+    }
+    if (params?.fuel && params.fuel !== 'ALL') {
+      queryParts.push(`fuel=${encodeURIComponent(params.fuel)}`);
+    }
+    if (params?.q && params.q.trim()) {
+      queryParts.push(`q=${encodeURIComponent(params.q.trim())}`);
+    }
+    if (params?.pressureMin !== undefined) queryParts.push(`pressure_min=${params.pressureMin}`);
+    if (params?.pressureMax !== undefined) queryParts.push(`pressure_max=${params.pressureMax}`);
+    if (params?.o2Min !== undefined) queryParts.push(`o2_min=${params.o2Min}`);
+    if (params?.o2Max !== undefined) queryParts.push(`o2_max=${params.o2Max}`);
+    if (params?.sortBy) queryParts.push(`sort_by=${params.sortBy}`);
+    if (params?.sortOrder) queryParts.push(`sort_order=${params.sortOrder}`);
+
+    const qs = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+
+    try {
+      const data = await apiRequest<any>(`/api/experiments${qs}`, 'GET');
+      return transformPaginatedExperiments(data);
+    } catch (err) {
+      if (mode === 'api') throw err;
+      throw err;
+    }
+  }
+
+  async getExperiment(id: string): Promise<Experiment> {
+    const mode = this.getMode();
+    if (mode === 'mock') {
+      return fixtureAdapter.getExperiment(id);
     }
 
     try {
-      // GET /api/experiments
-      const data = await apiRequest<Experiment[]>('/api/experiments', 'GET');
-      return data;
+      const data = await apiRequest<any>(`/api/experiments/${encodeURIComponent(id)}`, 'GET');
+      return transformBackendDetail(data);
     } catch (err) {
       if (mode === 'api') throw err;
-      return fixtureAdapter.listExperiments();
+      throw err;
     }
   }
 
-  async compareExperiments(ids: [string, string]): Promise<ComparisonViewModel> {
+  async compareExperiments(ids: string[]): Promise<ComparisonViewModel> {
     const mode = this.getMode();
     if (mode === 'mock') {
       return fixtureAdapter.compareExperiments(ids);
     }
 
     try {
-      // POST /api/compare
-      const data = await apiRequest<ComparisonViewModel>('/api/compare', 'POST', { ids });
-      return { ...data, dataSource: 'api' };
+      const data = await apiRequest<any>('/api/compare', 'POST', {
+        experiment_ids: ids,
+      });
+      return transformCompareResponse(data);
     } catch (err) {
       if (mode === 'api') throw err;
-      return fixtureAdapter.compareExperiments(ids);
+      throw err;
     }
   }
 
-  async getInsights(): Promise<InsightViewModel[]> {
+  async getInsights(category?: string): Promise<InsightViewModel[]> {
     const mode = this.getMode();
     if (mode === 'mock') {
-      return fixtureAdapter.getInsights();
+      return fixtureAdapter.getInsights(category);
     }
 
     try {
-      // GET /api/insights
-      const data = await apiRequest<InsightViewModel[]>('/api/insights', 'GET');
-      return data;
+      const endpoint = category && category !== 'ALL'
+        ? `/api/insights?category=${encodeURIComponent(category)}`
+        : '/api/insights';
+      const data = await apiRequest<any>(endpoint, 'GET');
+      return transformInsightsResponse(data);
     } catch (err) {
       if (mode === 'api') throw err;
-      return fixtureAdapter.getInsights();
+      throw err;
     }
   }
 
@@ -89,13 +149,28 @@ class DataSourceManager implements IgnisDataSource {
       return fixtureAdapter.predictScenario(inputs);
     }
 
+    const payload = buildPredictionPayload(inputs);
     try {
-      // POST /api/predict
-      const data = await apiRequest<PredictionResult>('/api/predict', 'POST', inputs);
-      return data;
+      const data = await apiRequest<any>('/api/predict', 'POST', payload);
+      return transformPredictionResponse(data);
     } catch (err) {
       if (mode === 'api') throw err;
-      return fixtureAdapter.predictScenario(inputs);
+      throw err;
+    }
+  }
+
+  async getHealth(): Promise<HealthViewModel> {
+    const mode = this.getMode();
+    if (mode === 'mock') {
+      return fixtureAdapter.getHealth();
+    }
+
+    try {
+      const data = await apiRequest<any>('/api/health', 'GET');
+      return transformHealthResponse(data);
+    } catch (err) {
+      if (mode === 'api') throw err;
+      return fixtureAdapter.getHealth();
     }
   }
 }

@@ -4,13 +4,12 @@ import {
   Flame,
   LayoutDashboard,
   Search,
-  ChartNoAxesCombined,
   GitCompareArrows,
   BrainCircuit,
   FlaskConical,
-  UploadCloud,
   Settings,
   HelpCircle,
+  UploadCloud,
   X,
 } from 'lucide-react';
 
@@ -19,14 +18,13 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const navItems = [
+// Exactly the five primary modules mandated by Section 10 of the Master Integration Prompt
+const primaryNavItems = [
   { name: 'Mission Control', path: '/', icon: LayoutDashboard },
   { name: 'Experiment Explorer', path: '/research', icon: Search },
-  { name: 'Visualization', path: '/visualization', icon: ChartNoAxesCombined },
   { name: 'Compare Experiments', path: '/comparison', icon: GitCompareArrows },
+  { name: 'Predictive Lab', path: '/predictive-lab', icon: FlaskConical },
   { name: 'AI Insights', path: '/insights', icon: BrainCircuit },
-  { name: 'Predictive Lab', path: '/predictive-lab', icon: FlaskConical, isNew: true },
-  { name: 'Submit Experiment', path: '/submit-experiment', icon: UploadCloud },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
@@ -72,13 +70,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Section Label */}
           <div className="px-5 pt-5 pb-2">
             <span className="text-[10px] font-mono tracking-wider text-gray-500 uppercase">
-              Research Workspace
+              Core Research Modules
             </span>
           </div>
 
-          {/* Nav List */}
+          {/* Primary Nav List (Exactly 5 Core Modules) */}
           <nav className="px-3 space-y-1">
-            {navItems.map((item) => {
+            {primaryNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -98,43 +96,53 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     <Icon size={16} />
                     <span>{item.name}</span>
                   </div>
-                  {item.isNew && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                      PREVIEW
-                    </span>
-                  )}
                 </NavLink>
               );
             })}
           </nav>
         </div>
 
-        {/* Sidebar Footer */}
+        {/* Sidebar Footer — Secondary Utilities */}
         <div className="p-4 border-t border-[#213047]/70 space-y-3 bg-[#050810]/50">
           <div className="space-y-1">
             <NavLink
-              to="/settings"
+              to="/submit-experiment"
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-mono transition-colors ${
+                `flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
                   isActive ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
                 }`
               }
             >
-              <Settings size={15} />
+              <UploadCloud size={14} />
+              <span>Submit Data</span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-gray-400 border border-slate-700 ml-auto">
+                PREVIEW
+              </span>
+            </NavLink>
+            <NavLink
+              to="/settings"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                  isActive ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
+                }`
+              }
+            >
+              <Settings size={14} />
               <span>Settings</span>
             </NavLink>
             <NavLink
               to="/help"
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-mono transition-colors ${
+                `flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
                   isActive ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
                 }`
               }
             >
-              <HelpCircle size={15} />
-              <span>Help & Support</span>
+              <HelpCircle size={14} />
+              <span>Help & Provenance</span>
             </NavLink>
           </div>
 

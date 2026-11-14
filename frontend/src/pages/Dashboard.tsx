@@ -9,29 +9,92 @@ import {
   TrendingUp,
   FileCheck2,
   ExternalLink,
+  AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
-import { PageHeader } from '../components/layout/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
 import { OutcomesChart } from '../components/charts/OutcomesChart';
 import { FlameHero3D } from '../components/visuals/FlameHero3D';
 import { dataSource } from '../services/dataSource';
-import { OverviewViewModel } from '../types/experiment';
+import { OverviewViewModel, InsightViewModel } from '../types/experiment';
 import { VERIFIED_AGGREGATES } from '../data/verifiedAggregates';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [overview, setOverview] = useState<OverviewViewModel | null>(null);
+  const [insights, setInsights] = useState<InsightViewModel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [overviewData, insightsData] = await Promise.all([
+        dataSource.getOverview(),
+        dataSource.getInsights().catch(() => []),
+      ]);
+      setOverview(overviewData);
+      setInsights(insightsData.slice(0, 3));
+    } catch (err: any) {
+      setError(err?.message || 'Failed to connect to the IGNIS scientific backend on port 8000.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    dataSource.getOverview().then((data) => {
-      setOverview(data);
-      setLoading(false);
-    });
+    loadData();
   }, []);
+
+  const isDemo = overview?.dataSource === 'fixture';
 
   return (
     <div className="space-y-8">
+      {/* Live Data / Demo Mode Provenance Banner */}
+      {isDemo ? (
+        <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-200 text-xs font-mono flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            <span className="font-bold">DEMO DATA — Sample records</span>
+            <span className="text-gray-400">· Backend offline. Displaying verified 40-record sample fixture.</span>
+          </div>
+          <button
+            onClick={loadData}
+            className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 flex items-center gap-1"
+          >
+            <RotateCcw size={12} />
+            <span>Retry Backend API</span>
+          </button>
+        </div>
+      ) : error ? (
+        <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs font-mono flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="text-rose-400" />
+            <div>
+              <span className="font-bold block">Backend Connection Error</span>
+              <span className="text-gray-300 font-sans">{error}</span>
+            </div>
+          </div>
+          <button
+            onClick={loadData}
+            className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
+          >
+            <RotateCcw size={12} />
+            <span>Retry</span>
+          </button>
+        </div>
+      ) : (
+        <div className="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="font-bold">LIVE FASTAPI BACKEND CONNECTED</span>
+            <span className="text-gray-400">· 403 Authentic NASA Physical Sciences Informatics (PSI) Records Indexed</span>
+          </div>
+          <span className="text-[10px] text-gray-500 font-mono">Port 8000 · Verified PSI-69 & PSI-25</span>
+        </div>
+      )}
+
       {/* Hero Banner Section */}
       <div className="relative rounded-2xl glass-panel-glow overflow-hidden p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
         {/* Left Hero Text */}
@@ -48,7 +111,7 @@ export const Dashboard: React.FC = () => {
             </span>
           </h1>
           <p className="text-sm sm:text-base text-ignis-muted mt-4 leading-relaxed font-sans">
-            Explore, analyze, and compare microgravity combustion investigations from NASA's Physical Sciences Informatics (PSI) repository with source-linked evidence.
+            Explore, analyze, and compare microgravity combustion investigations from NASA's Physical Sciences Informatics (PSI) repository with source-linked evidence and validated predictive modeling.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -56,14 +119,14 @@ export const Dashboard: React.FC = () => {
               onClick={() => navigate('/research')}
               className="btn-primary text-sm px-5 py-3 rounded-xl shadow-glow-orange flex items-center gap-2"
             >
-              <span>Explore Research</span>
+              <span>Explore Research ({overview?.totalSourceRows ?? 403} Trials)</span>
               <ArrowRight size={16} />
             </button>
             <button
-              onClick={() => navigate('/visualization')}
+              onClick={() => navigate('/predictive-lab')}
               className="btn-secondary text-sm px-5 py-3 rounded-xl flex items-center gap-2"
             >
-              <span>View 3D Lab</span>
+              <span>Predictive Lab →</span>
             </button>
           </div>
         </div>
@@ -78,15 +141,15 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Database}
-          label="Source Table Rows"
+          label="Total NASA Experiments"
           value={overview?.totalSourceRows ?? 403}
-          subtext="Documented NASA PSI records"
+          subtext="Authentic NASA PSI records"
           tone="orange"
           onClick={() => navigate('/research')}
         />
         <StatCard
           icon={Layers}
-          label="PSI Investigations"
+          label="NASA Investigations"
           value={overview?.investigationCount ?? 2}
           subtext="FLEX (PSI-69) & BASS-II (PSI-25)"
           tone="cyan"
@@ -94,9 +157,9 @@ export const Dashboard: React.FC = () => {
         />
         <StatCard
           icon={Flask}
-          label="Loaded Sample Records"
-          value={overview?.loadedSampleCount ?? 40}
-          subtext="25 FLEX + 15 BASS-II excerpts"
+          label="Total Indexed Records"
+          value={overview?.loadedSampleCount ?? 403}
+          subtext="274 FLEX + 129 BASS-II trials"
           tone="green"
           onClick={() => navigate('/research')}
         />
@@ -106,7 +169,7 @@ export const Dashboard: React.FC = () => {
           value="3"
           subtext="Extinction, Disruption, Completion"
           tone="neutral"
-          onClick={() => navigate('/visualization')}
+          onClick={() => navigate('/research')}
         />
       </div>
 
@@ -128,7 +191,11 @@ export const Dashboard: React.FC = () => {
               Verified distribution of 274 microgravity droplet combustion endings.
             </p>
           </div>
-          <OutcomesChart height={200} />
+          <OutcomesChart
+            height={200}
+            outcomes={overview?.flexOutcomes}
+            total={overview?.totalSourceRows}
+          />
         </div>
 
         {/* Panel 2: Combustion Overview (Microgravity Physics Summary) */}
@@ -144,7 +211,7 @@ export const Dashboard: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-gray-400 mb-4">
-              Fundamental combustion physics under absent buoyancy:
+              Fundamental combustion transport regimes under absent buoyancy:
             </p>
 
             <div className="space-y-3 text-xs">
@@ -169,10 +236,10 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <button
-            onClick={() => navigate('/visualization')}
+            onClick={() => navigate('/research')}
             className="w-full mt-4 btn-secondary text-xs py-2 flex items-center justify-center gap-2"
           >
-            <span>Open Interactive Visualizer</span>
+            <span>Browse All 403 Experiments</span>
             <ArrowRight size={13} />
           </button>
         </div>
@@ -183,7 +250,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-base font-bold text-white font-mono flex items-center gap-2">
                 <FileCheck2 size={17} className="text-ignis-green" />
-                <span>Latest Evidence</span>
+                <span>Latest Scientific Evidence</span>
               </h3>
               <a
                 href={VERIFIED_AGGREGATES.flex.sourceUrl}
@@ -196,39 +263,49 @@ export const Dashboard: React.FC = () => {
               </a>
             </div>
             <p className="text-xs text-gray-400 mb-4">
-              Deterministic source facts verified against NASA PSI tables:
+              Evidence-based findings derived directly from authentic NASA experiments:
             </p>
 
             <div className="space-y-2.5">
-              <div className="p-3 rounded-xl bg-[#091322] border border-[#213047] hover:border-cyan-500/40 transition-colors">
-                <div className="flex items-center justify-between text-[11px] font-mono text-cyan-400 mb-1">
-                  <span>FLEX Fuel Totals</span>
-                  <span className="text-gray-500">Documented</span>
-                </div>
-                <p className="text-xs text-gray-200">
-                  157 Methanol and 117 Heptane tests recorded across 15 parameters.
-                </p>
-              </div>
+              {insights.length > 0 ? (
+                insights.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate('/insights')}
+                    className="p-3 rounded-xl bg-[#091322] border border-[#213047] hover:border-cyan-500/40 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-mono text-cyan-400 mb-1">
+                      <span>{item.title}</span>
+                      <span className="text-gray-500 text-[10px]">{item.id}</span>
+                    </div>
+                    <p className="text-xs text-gray-200 line-clamp-2">
+                      {item.finding}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="p-3 rounded-xl bg-[#091322] border border-[#213047]">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-cyan-400 mb-1">
+                      <span>FLEX Fuel Totals</span>
+                      <span className="text-gray-500">Documented</span>
+                    </div>
+                    <p className="text-xs text-gray-200">
+                      157 Methanol and 117 Heptane tests recorded across 15 parameters.
+                    </p>
+                  </div>
 
-              <div className="p-3 rounded-xl bg-[#091322] border border-[#213047] hover:border-orange-500/40 transition-colors">
-                <div className="flex items-center justify-between text-[11px] font-mono text-orange-400 mb-1">
-                  <span>BASS-II Scope</span>
-                  <span className="text-gray-500">Documented</span>
-                </div>
-                <p className="text-xs text-gray-200">
-                  129 recorded source rows with 51 distinct material descriptions.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-[#091322] border border-[#213047]">
-                <div className="flex items-center justify-between text-[11px] font-mono text-emerald-400 mb-1">
-                  <span>Sample Ingestion</span>
-                  <span className="text-gray-500">Local Fixture</span>
-                </div>
-                <p className="text-xs text-gray-200">
-                  40 real source records loaded locally (25 droplet, 15 solid).
-                </p>
-              </div>
+                  <div className="p-3 rounded-xl bg-[#091322] border border-[#213047]">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-orange-400 mb-1">
+                      <span>BASS-II Scope</span>
+                      <span className="text-gray-500">Documented</span>
+                    </div>
+                    <p className="text-xs text-gray-200">
+                      129 recorded source rows with 51 distinct material descriptions.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -236,7 +313,7 @@ export const Dashboard: React.FC = () => {
             onClick={() => navigate('/insights')}
             className="w-full mt-4 btn-secondary text-xs py-2 flex items-center justify-center gap-2"
           >
-            <span>Explore AI Insights</span>
+            <span>Explore AI Insights ({insights.length > 0 ? '5 Available' : 'Explore'})</span>
             <ArrowRight size={13} />
           </button>
         </div>

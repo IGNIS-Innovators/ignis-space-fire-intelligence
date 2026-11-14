@@ -10,6 +10,13 @@ export interface BaseExperiment {
   testIdentifier: string;
   sourceUrl: string;
   dataStatus: string;
+  date?: string | null;
+  pi?: string | null;
+  apparatus?: string | null;
+  dataQualityFlags?: Record<string, boolean>;
+  sourceFile?: string;
+  chamberParameters?: Record<string, any>;
+  measurements?: Record<string, any>;
 }
 
 export interface FlexExperiment extends BaseExperiment {
@@ -56,6 +63,33 @@ export interface IgnisFixture {
   experiments: Array<Record<string, unknown>>;
 }
 
+// Pagination & Query Types
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface PaginatedExperiments {
+  experiments: Experiment[];
+  pagination: PaginationMeta;
+}
+
+export interface ExperimentQueryParams {
+  page?: number;
+  pageSize?: number;
+  investigation?: string;
+  fuel?: string;
+  q?: string;
+  pressureMin?: number;
+  pressureMax?: number;
+  o2Min?: number;
+  o2Max?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 // View Models for UI
 export interface OverviewViewModel {
   totalSourceRows: number;
@@ -75,12 +109,19 @@ export interface OverviewViewModel {
   bassMaterialCount: number;
   dataSource: 'api' | 'fixture';
   lastUpdated?: string;
+  numericSummaries?: Record<string, any>;
 }
 
 export interface InsightViewModel {
   id: string;
+  category?: string;
   title: string;
   finding: string;
+  evidenceSummary?: string;
+  supportingExperimentIds?: string[];
+  statisticalBasis?: string;
+  scientificImplication?: string;
+  dataType?: string;
   source: string;
   investigationId: InvestigationId;
   sourceUrl: string;
@@ -113,6 +154,13 @@ export interface ComparisonViewModel {
     valueB: string;
   }>;
   dataSource: 'api' | 'local';
+  matrix?: Array<{
+    parameter: string;
+    category: string;
+    unit: string;
+    values: Record<string, any>;
+  }>;
+  chartSeries?: Record<string, any>;
 }
 
 export interface PredictionInputs {
@@ -120,16 +168,42 @@ export interface PredictionInputs {
   oxygenPercentage: number; // 15 to 40%
   ambientPressureMmHg: number; // 400 to 1000 mmHg
   initialDropletDiameterMm: number; // 1.0 to 4.0 mm
+  modelChoice?: 'ridge' | 'random_forest';
+  n2MoleFraction?: number;
+  co2MoleFraction?: number;
+  heMoleFraction?: number;
 }
 
 export interface PredictionResult {
   isAvailable: boolean;
   reason?: string;
+  predictedBurningRateConstant?: number;
+  units?: string;
+  modelName?: string;
+  modelVersion?: string;
+  modelSelectionBasis?: string;
+  isExtrapolation?: boolean;
+  extrapolationWarnings?: string[];
+  scientificDisclaimer?: string;
+  scientificNotes?: string;
+  physicalDomain?: string;
   nearestExperiments: FlexExperiment[];
   validatedModelVersion?: string;
   scientificBasis?: string;
   simulatedSpreadRateMmS?: number | null;
   extinctionTimeS?: number | null;
+}
+
+export interface HealthViewModel {
+  status: string;
+  version: string;
+  timestamp: string;
+  datasetsLoaded: boolean;
+  experimentsCount: number;
+  investigationsLoaded: string[];
+  modelReady: boolean;
+  defaultModel: string;
+  notes?: string;
 }
 
 export interface SubmissionPayload {
