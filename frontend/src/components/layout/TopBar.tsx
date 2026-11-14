@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, Bell, Database, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Menu, Search, User, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { dataSource } from '../../services/dataSource';
 import { HealthViewModel } from '../../types/experiment';
@@ -28,7 +28,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
   const isHealthy = health?.status === 'healthy';
 
   return (
-    <header className="h-16 px-4 lg:px-8 border-b border-[#213047] bg-[#070B15]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between gap-4">
+    <header className="h-16 px-4 lg:px-8 border-b border-[#1E3252]/80 bg-[#070D1B]/80 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between gap-4">
       {/* Left Mobile Menu Toggle + Breadcrumb */}
       <div className="flex items-center gap-3">
         <button
@@ -38,10 +38,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
           <Menu size={20} />
         </button>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-gray-400">
+        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-[#9FB0C8]">
           <span>NASA PSI</span>
           <span className="text-gray-600">/</span>
-          <span className="text-cyan-400 font-medium">IGNIS Space Fire Intelligence</span>
+          <span className="text-[#40C9FF] font-medium">IGNIS Space Fire Intelligence</span>
         </div>
       </div>
 
@@ -65,11 +65,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
       <div className="flex items-center gap-3">
         {/* Dynamic Live Health / Provenance Indicator */}
         <div
-          className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${
-            isHealthy
-              ? 'bg-[#0B1A28] border-emerald-500/40 text-emerald-300'
-              : 'bg-[#151520] border-amber-500/40 text-amber-300'
-          }`}
+          className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border ${isHealthy
+            ? 'bg-[#0B1A28] border-emerald-500/40 text-emerald-300'
+            : 'bg-[#151520] border-amber-500/40 text-amber-300'
+            }`}
         >
           {isHealthy ? (
             <>
@@ -84,19 +83,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenSidebar }) => {
           )}
         </div>
 
-        {/* Notifications */}
-        <button
-          title="Notifications"
-          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-slate-800/80 transition-colors relative"
-        >
-          <Bell size={17} />
-          <span className="w-1.5 h-1.5 rounded-full bg-ignis-orange absolute top-1.5 right-1.5 ring-2 ring-[#070B15]" />
-        </button>
-
-        {/* Researcher Avatar */}
+        {/* User Profile */}
         <div className="flex items-center gap-2.5 pl-2 border-l border-[#213047]/80">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-400 flex items-center justify-center font-bold text-xs text-white font-mono shadow-[0_0_10px_rgba(54,184,255,0.4)]">
-            NASA
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600/80 to-blue-500/80 border border-cyan-400/40 flex items-center justify-center text-white shadow-[0_0_12px_rgba(54,184,255,0.35)]">
+            <User size={15} className="text-cyan-100" />
           </div>
           <div className="hidden sm:flex flex-col text-left">
             <span className="text-xs font-semibold text-white leading-tight font-mono">

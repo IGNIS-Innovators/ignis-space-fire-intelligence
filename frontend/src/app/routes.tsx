@@ -2,6 +2,7 @@ export const ROUTES = {
   DASHBOARD: '/',
   DASHBOARD_ALIAS: '/dashboard',
   RESEARCH: '/research',
+  ANALYTICS: '/analytics',
   VISUALIZATION: '/visualization',
   COMPARISON: '/comparison',
   INSIGHTS: '/insights',

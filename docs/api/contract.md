@@ -448,9 +448,10 @@ export const apiClient = axios.create({
 | :--- | :--- | :--- |
 | **1. Mission Control** | `GET /api/overview`<br>`GET /api/health` | KPI count cards (403 trials), Fuel donut chart, Outcome status breakdown |
 | **2. Experiment Explorer** | `GET /api/experiments?...`<br>`GET /api/experiments/:id` | Filterable experiment table, text search bar, modal for full sensor detail |
-| **3. Compare Experiments** | `POST /api/compare` | Multi-select experiment chip list (up to 10), aligned variable table, bar charts |
-| **4. Predictive Lab** | `POST /api/predict` | Fuel toggle, Pressure/O2 sliders, Diameter slider, Rate output card, Extrapolation alert banner |
-| **5. AI Insights** | `GET /api/insights` | Cards displaying findings, correlation proofs, and clickable supporting trial pills |
+| **3. Data Analytics** | `GET /api/analytics?...` | Bivariate scatter charts, burn duration distribution, test outcomes, material matrices |
+| **4. Compare Experiments** | `POST /api/compare` | Multi-select experiment chip list (up to 10), aligned variable table, bar charts |
+| **5. Predictive Lab** | `POST /api/predict` | Fuel toggle, Pressure/O2 sliders, Diameter slider, Rate output card, Extrapolation alert banner |
+| **6. AI Insights** | `GET /api/insights` | Cards displaying findings, correlation proofs, and clickable supporting trial pills |
 
 ---
 

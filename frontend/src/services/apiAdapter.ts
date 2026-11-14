@@ -20,6 +20,7 @@ import {
   PaginatedExperiments,
   HealthViewModel,
 } from '../types/experiment';
+import { AnalyticsViewModel } from '../types/analytics';
 
 // ============================================================================
 // Unit Conversion Constants (SI <-> NASA PSI Traditional Units)
@@ -386,5 +387,20 @@ export function transformHealthResponse(res: any): HealthViewModel {
     modelReady: Boolean(res.model_ready),
     defaultModel: res.default_model || 'Ridge Regression (Tuned)',
     notes: res.notes,
+  };
+}
+
+// ============================================================================
+// 7. Analytics Adapter
+// ============================================================================
+export function transformAnalyticsResponse(res: any): AnalyticsViewModel {
+  return {
+    investigation_filter: res.investigation_filter || 'all',
+    fuel_filter: res.fuel_filter || 'all',
+    total_records_analyzed: Number(res.total_records_analyzed || 0),
+    provenance: res.provenance || 'NASA PSI Archives',
+    scientific_notice: res.scientific_notice || '',
+    flex: res.flex || null,
+    bass: res.bass || null,
   };
 }

@@ -20,7 +20,9 @@ import {
   transformPredictionResponse,
   transformInsightsResponse,
   transformHealthResponse,
+  transformAnalyticsResponse,
 } from './apiAdapter';
+import { AnalyticsViewModel } from '../types/analytics';
 import { fixtureAdapter } from './fixtureAdapter';
 
 class DataSourceManager implements IgnisDataSource {
@@ -108,6 +110,37 @@ class DataSourceManager implements IgnisDataSource {
     }
   }
 
+  /**
+   * Retrieves a curated, scientifically diverse sample of authentic NASA experiments
+   * representing both FLEX (liquid droplets) and BASS-II (solid fuels) across varied materials.
+   * Every record is fetched directly from GET /api/experiments/{id}.
+   */
+  async getFeaturedExperiments(): Promise<Experiment[]> {
+    const featuredIds = [
+      'FLEX-1',       // FLEX: Methanol (Disruption) -> SVS S3 ignition flame
+      'BASS-II-B1',   // BASS-II: PMMA Film -> Expedition 38 / Rick Mastracchio MSG
+      'FLEX-12',      // FLEX: Heptane (Disruption) -> SVS S2 pre-ignition droplet
+      'BASS-II-B11',  // BASS-II: PMMA Film (reduced O2) -> Expedition 46 / Tim Kopra
+      'FLEX-2',       // FLEX: Methanol (Extinction) -> SVS S4 soot luminescence
+      'BASS-II-F1',   // BASS-II: Nomex Fabric -> Expedition 35 Hardware Setup
+    ];
+
+    try {
+      const results = await Promise.all(
+        featuredIds.map(async (id) => {
+          try {
+            return await this.getExperiment(id);
+          } catch {
+            return null;
+          }
+        })
+      );
+      return results.filter((r): r is Experiment => r !== null);
+    } catch (err) {
+      return [];
+    }
+  }
+
   async compareExperiments(ids: string[]): Promise<ComparisonViewModel> {
     const mode = this.getMode();
     if (mode === 'mock') {
@@ -156,6 +189,31 @@ class DataSourceManager implements IgnisDataSource {
     } catch (err) {
       if (mode === 'api') throw err;
       throw err;
+    }
+  }
+
+  async getAnalytics(investigation?: string, fuel?: string): Promise<AnalyticsViewModel> {
+    const mode = this.getMode();
+    if (mode === 'mock') {
+      return fixtureAdapter.getAnalytics(investigation, fuel);
+    }
+
+    const queryParts: string[] = [];
+    if (investigation && investigation !== 'ALL') {
+      const invName = investigation === 'PSI-69' ? 'FLEX' : investigation === 'PSI-25' ? 'BASS-II' : investigation;
+      queryParts.push(`investigation=${encodeURIComponent(invName)}`);
+    }
+    if (fuel && fuel !== 'ALL') {
+      queryParts.push(`fuel=${encodeURIComponent(fuel)}`);
+    }
+    const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+
+    try {
+      const data = await apiRequest<any>(`/api/analytics${queryString}`, 'GET');
+      return transformAnalyticsResponse(data);
+    } catch (err) {
+      if (mode === 'api') throw err;
+      return fixtureAdapter.getAnalytics(investigation, fuel);
     }
   }
 

@@ -116,12 +116,6 @@ export const NeuralInsight3D: React.FC<{ className?: string }> = ({
           <NeuralSculpture />
         </Float>
       </ThreeCanvasBoundary>
-
-      <div className="absolute bottom-3 right-4 pointer-events-none z-10">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono text-cyan-300/90 bg-[#070D1B]/80 border border-cyan-500/25 backdrop-blur-md">
-          Conceptual AI Architecture · Semantic Space Synthesis
-        </span>
-      </div>
     </div>
   );
 };

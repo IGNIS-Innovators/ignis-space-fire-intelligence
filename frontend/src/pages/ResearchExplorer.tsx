@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, RotateCcw, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, AlertCircle, Sparkles } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { ExperimentFilters } from '../components/research/ExperimentFilters';
 import { ExperimentCard } from '../components/research/ExperimentCard';
-import { DetailDrawer } from '../components/ui/DetailDrawer';
+import { ExperimentDetailModal } from '../components/ui/ExperimentDetailModal';
 import { LoadingSkeleton } from '../components/ui/LoadingSkeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { dataSource } from '../services/dataSource';
@@ -15,6 +15,7 @@ export const ResearchExplorer: React.FC = () => {
   const navigate = useNavigate();
 
   const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [featuredExperiments, setFeaturedExperiments] = useState<Experiment[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>({
     total: 403,
     page: 1,
@@ -31,6 +32,21 @@ export const ResearchExplorer: React.FC = () => {
   const [fuelOrMaterial, setFuelOrMaterial] = useState('ALL');
   const [testEnd, setTestEnd] = useState('ALL');
   const [page, setPage] = useState(1);
+
+  // Check if current view is the default unfiltered landing view
+  const isDefaultView =
+    page === 1 &&
+    investigation === 'ALL' &&
+    fuelOrMaterial === 'ALL' &&
+    testEnd === 'ALL' &&
+    !query.trim();
+
+  // Load featured experiments once on mount for the curated diversity showcase
+  useEffect(() => {
+    dataSource.getFeaturedExperiments().then((feats) => {
+      if (feats.length > 0) setFeaturedExperiments(feats);
+    }).catch(() => null);
+  }, []);
 
   // Update query if URL param changes
   useEffect(() => {
@@ -171,6 +187,47 @@ export const ResearchExplorer: React.FC = () => {
         />
       </div>
 
+      {/* Featured Microgravity Studies Showcase (First Page / Unfiltered Landing View) */}
+      {isDefaultView && featuredExperiments.length > 0 && !loading && (
+        <section className="space-y-3.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-ignis-orange animate-pulse" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+                Featured NASA Microgravity Investigations
+              </h3>
+              <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded">
+                Cross-Regime Showcase · 6 Trials
+              </span>
+            </div>
+            <span className="hidden sm:inline-block text-[11px] font-mono text-gray-400">
+              Balanced Liquid Droplet (FLEX) & Solid Flammability (BASS-II)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredExperiments.map((exp) => (
+              <ExperimentCard
+                key={`featured-${exp.id}`}
+                experiment={exp}
+                onViewDetails={handleViewDetails}
+                onCompare={handleCompare}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Explorer Directory Header */}
+      <div className="flex items-center justify-between pt-2 border-t border-[#213047]/40">
+        <h3 className="text-xs uppercase font-mono tracking-wider text-gray-400">
+          {isDefaultView ? 'Full Archive Directory (All 403 Documented Trials)' : 'Matching Archive Results'}
+        </h3>
+        <span className="text-xs font-mono text-gray-500">
+          Showing {experiments.length} of {pagination.total} trials
+        </span>
+      </div>
+
       {/* Grid of Experiment Cards */}
       {loading ? (
         <LoadingSkeleton count={6} height="h-64" />
@@ -227,11 +284,10 @@ export const ResearchExplorer: React.FC = () => {
                   <button
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
-                    className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${
-                      pagination.page === pageNum
-                        ? 'bg-ignis-orange text-white font-bold'
-                        : 'bg-[#0D1829] text-gray-400 hover:text-white border border-[#213047]'
-                    }`}
+                    className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${pagination.page === pageNum
+                      ? 'bg-ignis-orange text-white font-bold'
+                      : 'bg-[#0D1829] text-gray-400 hover:text-white border border-[#213047]'
+                      }`}
                   >
                     {pageNum}
                   </button>
@@ -251,8 +307,8 @@ export const ResearchExplorer: React.FC = () => {
         </div>
       )}
 
-      {/* Slide-out detail drawer */}
-      <DetailDrawer
+      {/* Centered detail modal dialog */}
+      <ExperimentDetailModal
         experiment={selectedExperiment}
         isOpen={Boolean(selectedExperiment)}
         onClose={() => setSelectedExperiment(null)}

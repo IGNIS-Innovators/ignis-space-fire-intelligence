@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, ExternalLink, GitCompare, Eye, AlertCircle, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ExternalLink, GitCompare, Eye, AlertCircle, ShieldAlert, CheckCircle2, Image } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Experiment, isFlexExperiment, isBassExperiment } from '../../types/experiment';
 import { StatusBadge } from './StatusBadge';
@@ -11,6 +11,11 @@ import {
   formatBurnTime,
   formatBurningRate,
 } from '../../lib/formatters';
+import {
+  getMediaForExperiment,
+  verificationLabel,
+  verificationDotColor,
+} from '../../services/nasaMediaService';
 
 interface DetailDrawerProps {
   experiment: Experiment | null;
@@ -31,6 +36,9 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
 
   const isFlex = isFlexExperiment(experiment);
   const isBass = isBassExperiment(experiment);
+
+  const [imgError, setImgError] = useState(false);
+  const media = getMediaForExperiment(experiment.investigationId as 'PSI-69' | 'PSI-25', experiment.id);
 
   const handleGoToCompare = () => {
     if (onSelectForCompare) {
@@ -80,6 +88,61 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
 
           {/* Content Body */}
           <div className="py-6 space-y-5">
+            {/* NASA Scientific Media & Provenance */}
+            {media && !imgError && (
+              <div className="bg-[#0B1526] rounded-xl p-4 border border-[#213047] overflow-hidden">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Image size={15} className="text-cyan-400" />
+                    <h4 className="text-xs uppercase font-mono tracking-wider text-white">
+                      NASA Scientific Imagery & Provenance
+                    </h4>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-[10px] font-mono text-gray-300 bg-black/50 px-2 py-0.5 rounded border border-gray-700/50">
+                    <span className={`w-1.5 h-1.5 rounded-full ${verificationDotColor(media.verificationLevel)}`} />
+                    {verificationLabel(media.verificationLevel)}
+                  </span>
+                </div>
+
+                <div className="relative rounded-lg overflow-hidden border border-[#213047]/80 bg-black/40 mb-3 aspect-video flex items-center justify-center">
+                  <img
+                    src={media.imageUrl}
+                    alt={media.title}
+                    loading="lazy"
+                    onError={() => setImgError(true)}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <h5 className="font-semibold text-gray-200 font-mono text-[13px]">{media.title}</h5>
+                  <p className="text-gray-400 italic text-[11px] leading-relaxed">
+                    "{media.caption}"
+                  </p>
+
+                  {media.sessionNote && (
+                    <div className="p-2.5 rounded bg-amber-950/30 border border-amber-800/40 text-amber-200/90 text-[11px] font-sans">
+                      <span className="font-semibold text-amber-300 font-mono block mb-0.5">Flight Session Verification:</span>
+                      {media.sessionNote}
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-[#213047]/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-gray-400">
+                    <span>{media.attribution}</span>
+                    <a
+                      href={media.sourcePage}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                    >
+                      <span>Open NASA Source</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Mission & Apparatus Metadata */}
             <div className="bg-[#0B1526] rounded-xl p-4 border border-[#213047] text-xs font-mono space-y-2">
               <div className="flex justify-between">

@@ -21,7 +21,8 @@ export const App: React.FC = () => {
           <Route index element={<Dashboard />} />
           <Route path={ROUTES.DASHBOARD_ALIAS} element={<Navigate to="/" replace />} />
           <Route path={ROUTES.RESEARCH} element={<ResearchExplorer />} />
-          <Route path={ROUTES.VISUALIZATION} element={<Visualization />} />
+          <Route path={ROUTES.ANALYTICS} element={<Visualization />} />
+          <Route path={ROUTES.VISUALIZATION} element={<Navigate to={ROUTES.ANALYTICS} replace />} />
           <Route path={ROUTES.COMPARISON} element={<Comparison />} />
           <Route path={ROUTES.INSIGHTS} element={<Insights />} />
           <Route path={ROUTES.PREDICTIVE_LAB} element={<PredictiveLab />} />

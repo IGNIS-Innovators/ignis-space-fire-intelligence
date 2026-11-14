@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Flame,
@@ -11,10 +11,11 @@ import {
   ExternalLink,
   AlertCircle,
   RotateCcw,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { StatCard } from '../components/ui/StatCard';
 import { OutcomesChart } from '../components/charts/OutcomesChart';
-import { FlameHero3D } from '../components/visuals/FlameHero3D';
 import { dataSource } from '../services/dataSource';
 import { OverviewViewModel, InsightViewModel } from '../types/experiment';
 import { VERIFIED_AGGREGATES } from '../data/verifiedAggregates';
@@ -48,6 +49,90 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   const isDemo = overview?.dataSource === 'fixture';
+
+  // Video & audio state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Toggle sound handler
+  const toggleSound = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isMuted) {
+      // Enable sound
+      video.muted = false;
+      video.volume = 1.0;
+      video.play().catch((err) => {
+        console.warn('Audio playback was prevented by browser policy:', err);
+      });
+      setIsMuted(false);
+    } else {
+      // Mute sound
+      video.muted = true;
+      setIsMuted(true);
+    }
+  };
+
+  // Route-aware lifecycle & visibility management
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Always start in muted mode upon mounting Mission Control
+    video.muted = true;
+    setIsMuted(true);
+
+    if (!prefersReducedMotion) {
+      video.play().catch(() => null);
+    }
+
+    // Stop audio and pause playback when browser tab is hidden
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        video.muted = true;
+        video.pause();
+        setIsMuted(true);
+      } else if (!prefersReducedMotion) {
+        // Tab restored: resume video in muted mode
+        video.muted = true;
+        video.play().catch(() => null);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Lifecycle cleanup: when navigating to another route, immediately mute and pause
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      video.muted = true;
+      video.pause();
+    };
+  }, [prefersReducedMotion]);
+
+  // Viewport intersection observer: pause video when scrolled off-screen
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || prefersReducedMotion) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => null);
+        } else {
+          // Off-screen: pause video and silence audio
+          video.pause();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [prefersReducedMotion]);
 
   return (
     <div className="space-y-8">
@@ -95,46 +180,95 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Banner Section */}
-      <div className="relative rounded-2xl glass-panel-glow overflow-hidden p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-        {/* Left Hero Text */}
-        <div className="flex-1 z-10 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/30 mb-4">
+      {/* Hero Banner Section with Full Background 3D Animation Video */}
+      <div className="relative rounded-2xl border border-[#1E3252] overflow-hidden p-6 sm:p-8 lg:p-12 min-h-[380px] lg:min-h-[440px] flex items-center bg-[#030712] shadow-[0_0_35px_rgba(255,107,53,0.12)]">
+        {/* Layer 1: Cinematic 3D Animation Video Background (z-0) */}
+        <video
+          ref={videoRef}
+          autoPlay={!prefersReducedMotion}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          poster="/assets/cinematic-deep-space-nebula.jpg"
+          className="absolute inset-0 w-full h-full object-cover object-[85%_center] lg:object-[80%_center] pointer-events-none z-0"
+        >
+          <source src="/videos/ignis-hero.mp4" type="video/mp4" />
+        </video>
+
+        {/* Layer 2: Dark Cinematic Gradient Overlay for Maximum Scientific Readability (z-1) */}
+        {/* Solid dark deep-space background across the left side eliminates any background shapes behind the text */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#030712] via-[#030712] via-40% to-transparent pointer-events-none z-[1]" />
+        {/* Subtle vertical vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#030712]/90 via-transparent to-[#030712]/40 pointer-events-none z-[1]" />
+
+        {/* Layer 3: Hero Content (z-10) */}
+        <div className="relative z-10 max-w-2xl py-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-orange-500/15 text-orange-400 border border-orange-500/40 mb-4 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
             NASA Physical Sciences Informatics
           </div>
+
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-            Welcome to <span className="text-ignis-orange drop-shadow-[0_0_20px_rgba(255,100,28,0.6)]">IGNIS</span>
-            <br />
-            <span className="text-2xl sm:text-3xl text-gray-200 font-light">
-              Space Fire Intelligence
+            Welcome to{' '}
+            <span
+              className="relative inline-block font-black text-[#FF6B35] tracking-wide"
+              style={{
+                textShadow:
+                  '0 0 10px rgba(255, 107, 53, 0.75), 0 0 25px rgba(255, 107, 53, 0.45), 0 0 40px rgba(255, 107, 53, 0.2)',
+              }}
+            >
+              IGNIS
             </span>
           </h1>
-          <p className="text-sm sm:text-base text-ignis-muted mt-4 leading-relaxed font-sans">
+
+          <p className="text-sm sm:text-base text-[#9FB0C8] mt-4 leading-relaxed font-sans max-w-xl">
             Explore, analyze, and compare microgravity combustion investigations from NASA's Physical Sciences Informatics (PSI) repository with source-linked evidence and validated predictive modeling.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
               onClick={() => navigate('/research')}
-              className="btn-primary text-sm px-5 py-3 rounded-xl shadow-glow-orange flex items-center gap-2"
+              className="btn-primary text-sm px-5 py-3 rounded-xl shadow-glow-orange flex items-center gap-2 font-mono"
             >
               <span>Explore Research ({overview?.totalSourceRows ?? 403} Trials)</span>
               <ArrowRight size={16} />
             </button>
             <button
               onClick={() => navigate('/predictive-lab')}
-              className="btn-secondary text-sm px-5 py-3 rounded-xl flex items-center gap-2"
+              className="btn-secondary text-sm px-5 py-3 rounded-xl flex items-center gap-2 font-mono text-gray-200 hover:text-white"
             >
               <span>Predictive Lab →</span>
             </button>
           </div>
         </div>
 
-        {/* Right 3D Animated Flame Hero */}
-        <div className="w-full lg:w-[480px] h-64 sm:h-80 lg:h-96 relative flex items-center justify-center">
-          <FlameHero3D />
-        </div>
+        {/* Audio Toggle Control (Bottom-Right of Hero) */}
+        <button
+          type="button"
+          onClick={toggleSound}
+          aria-label={isMuted ? 'Enable Sound' : 'Mute Sound'}
+          aria-pressed={!isMuted}
+          title={isMuted ? 'Enable Sound' : 'Mute Sound'}
+          className={`absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl font-mono text-xs backdrop-blur-xl border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#40C9FF]/60 ${
+            isMuted
+              ? 'bg-[#070D1B]/80 hover:bg-[#0E1A2E]/95 text-gray-300 hover:text-white border-[#1E3252] hover:border-[#40C9FF]/50 shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
+              : 'bg-[#0B1528]/95 text-[#40C9FF] border-[#40C9FF]/70 shadow-[0_0_22px_rgba(64,201,255,0.35)] font-semibold'
+          }`}
+        >
+          {isMuted ? (
+            <>
+              <VolumeX size={15} className="text-gray-400" />
+              <span>Enable Sound</span>
+            </>
+          ) : (
+            <>
+              <Volume2 size={15} className="text-[#40C9FF] animate-pulse" />
+              <span>Mute Sound</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* 4 KPI Cards Row */}

@@ -13,6 +13,7 @@ import {
   ExperimentQueryParams,
   HealthViewModel,
 } from '../types/experiment';
+import { AnalyticsViewModel } from '../types/analytics';
 import { compareExperimentsLocal } from '../lib/compare';
 
 // Parse and normalize the raw sample JSON into typed Experiment records
@@ -129,6 +130,10 @@ export const fixtureAdapter = {
       throw new Error(`Sample experiment '${id}' not found`);
     }
     return exp;
+  },
+
+  async getFeaturedExperiments(): Promise<Experiment[]> {
+    return cachedExperiments.slice(0, 6);
   },
 
   async compareExperiments(ids: string[]): Promise<ComparisonViewModel> {
@@ -248,6 +253,202 @@ export const fixtureAdapter = {
       modelReady: false,
       defaultModel: 'Offline Nearest Neighbors',
       notes: 'Running on local sample fixtures. Connect to live FastAPI backend at http://localhost:8000 for authentic NASA data.',
+    };
+  },
+
+  async getAnalytics(_investigation?: string, _fuel?: string): Promise<AnalyticsViewModel> {
+    const flexTests = cachedExperiments.filter((e): e is FlexExperiment => e.investigation === 'FLEX');
+    const bassTests = cachedExperiments.filter((e): e is BassExperiment => e.investigation === 'BASS-II');
+
+    const o2BrPoints = flexTests
+      .filter((e) => e.oxygenMoleFraction !== null && (e.burningRateOriginal || 0) > 0)
+      .map((e) => ({
+        test_id: e.id,
+        fuel: e.fuel,
+        x: Number((e.oxygenMoleFraction || 0).toFixed(4)),
+        y: Number((e.burningRateOriginal || 0).toFixed(4)),
+        secondary_val: e.initialDropletDiameterMm,
+        extra: { o2_pct: Number(((e.oxygenMoleFraction || 0) * 100).toFixed(2)) },
+      }));
+
+    const pressurePoints = flexTests
+      .filter((e) => e.ambientPressureMmHg !== null && (e.burningRateOriginal || 0) > 0)
+      .map((e) => ({
+        test_id: e.id,
+        fuel: e.fuel,
+        x: Number(((e.ambientPressureMmHg || 0) * 0.133322).toFixed(2)),
+        y: Number((e.burningRateOriginal || 0).toFixed(4)),
+        secondary_val: e.initialDropletDiameterMm,
+      }));
+
+    const diameterPoints = flexTests
+      .filter((e) => e.initialDropletDiameterMm !== null && (e.burningRateOriginal || 0) > 0)
+      .map((e) => ({
+        test_id: e.id,
+        fuel: e.fuel,
+        x: Number((e.initialDropletDiameterMm || 0).toFixed(3)),
+        y: Number((e.burningRateOriginal || 0).toFixed(4)),
+        secondary_val: e.burnTimeSeconds,
+      }));
+
+    return {
+      investigation_filter: _investigation || 'all',
+      fuel_filter: _fuel || 'all',
+      total_records_analyzed: cachedExperiments.length,
+      provenance: 'NASA PSI Verified Archives (Offline Fixture)',
+      scientific_notice: 'Derived from local sample fixtures. Connect live backend for full 403-trial dataset.',
+      flex: {
+        investigation: 'FLEX',
+        psi_reference: 'PSI-69',
+        total_records: flexTests.length,
+        o2_vs_burning_rate: {
+          title: 'Oxygen Mole Fraction vs Burning Rate Constant K',
+          investigation: 'FLEX',
+          x_label: 'Initial Ambient O₂ Mole Fraction',
+          x_unit: 'mole fraction',
+          y_label: 'Burning Rate Constant (K)',
+          y_unit: 'mm²/s',
+          sample_count: o2BrPoints.length,
+          missing_count: flexTests.length - o2BrPoints.length,
+          points: o2BrPoints,
+          correlations: { Methanol: 0.548, Heptane: 0.612 },
+          notes: 'Standard d²-law droplet burning dynamics.',
+        },
+        pressure_vs_burning_rate: {
+          title: 'Ambient Chamber Pressure vs Burning Rate Constant K',
+          investigation: 'FLEX',
+          x_label: 'Ambient Pressure',
+          x_unit: 'kPa',
+          y_label: 'Burning Rate Constant (K)',
+          y_unit: 'mm²/s',
+          sample_count: pressurePoints.length,
+          missing_count: flexTests.length - pressurePoints.length,
+          points: pressurePoints,
+        },
+        diameter_vs_burning_rate: {
+          title: 'Initial Droplet Diameter (d₀) vs Burning Rate Constant K',
+          investigation: 'FLEX',
+          x_label: 'Initial Droplet Diameter (d₀)',
+          x_unit: 'mm',
+          y_label: 'Burning Rate Constant (K)',
+          y_unit: 'mm²/s',
+          sample_count: diameterPoints.length,
+          missing_count: flexTests.length - diameterPoints.length,
+          points: diameterPoints,
+        },
+        burn_time_distribution: {
+          title: 'Burn Duration Distribution (tb)',
+          investigation: 'FLEX',
+          metric_label: 'Combustion Duration',
+          unit: 's',
+          sample_count: flexTests.length,
+          missing_count: 0,
+          stats: { min: 2.1, max: 28.4, mean: 12.8, median: 11.5, std: 5.6 },
+          bins: [
+            { bin_range: '0–5s', bin_start: 0, bin_end: 5, count: 3, percentage: 12 },
+            { bin_range: '5–10s', bin_start: 5, bin_end: 10, count: 8, percentage: 32 },
+            { bin_range: '10–15s', bin_start: 10, bin_end: 15, count: 9, percentage: 36 },
+            { bin_range: '15–20s', bin_start: 15, bin_end: 20, count: 3, percentage: 12 },
+            { bin_range: '20s+', bin_start: 20, bin_end: 35, count: 2, percentage: 8 },
+          ],
+        },
+        outcomes: {
+          title: 'FLEX Test Termination Modes',
+          investigation: 'FLEX',
+          sample_count: 274,
+          missing_count: 0,
+          items: [
+            { name: 'Extinction', count: VERIFIED_AGGREGATES.flex.outcomes.extinction, percentage: 67.9, color: '#FF6B35', description: 'Radiative or diffusive flame quenching.' },
+            { name: 'Disruption', count: VERIFIED_AGGREGATES.flex.outcomes.disruption, percentage: 22.3, color: '#40C9FF', description: 'Micro-explosive droplet rupture.' },
+            { name: 'Completion', count: VERIFIED_AGGREGATES.flex.outcomes.completion, percentage: 9.8, color: '#2EE59D', description: 'Complete liquid droplet vaporization.' },
+          ],
+        },
+        fuels: {
+          title: 'FLEX Liquid Fuel Selection',
+          investigation: 'FLEX',
+          sample_count: 274,
+          missing_count: 0,
+          items: [
+            { name: 'Methanol', count: VERIFIED_AGGREGATES.flex.fuels.methanol, percentage: 60.9, color: '#40C9FF', description: 'Alcohol fuel, blue spherical flame.' },
+            { name: 'Heptane', count: VERIFIED_AGGREGATES.flex.fuels.heptane, percentage: 39.1, color: '#FF8A50', description: 'Alkane fuel, luminous sooting flame.' },
+          ],
+        },
+      },
+      bass: {
+        investigation: 'BASS-II',
+        psi_reference: 'PSI-25',
+        total_records: bassTests.length,
+        material_distribution: {
+          title: 'BASS-II Solid Fuel Materials',
+          investigation: 'BASS-II',
+          sample_count: 129,
+          missing_count: 0,
+          items: [
+            { name: 'PMMA', count: 90, percentage: 69.8, color: '#FF6B35' },
+            { name: 'SIBAL', count: 22, percentage: 17.1, color: '#40C9FF' },
+            { name: 'Nomex', count: 10, percentage: 7.8, color: '#C084FC' },
+            { name: 'Wax', count: 7, percentage: 5.4, color: '#FFE57A' },
+          ],
+        },
+        geometry_distribution: {
+          title: 'BASS-II Specimen Geometries',
+          investigation: 'BASS-II',
+          sample_count: 129,
+          missing_count: 0,
+          items: [
+            { name: 'Flat Sheet', count: 78, percentage: 60.5, color: '#F97316' },
+            { name: 'Cylindrical Rod', count: 51, percentage: 39.5, color: '#38BDF8' },
+          ],
+        },
+        initial_o2_distribution: {
+          title: 'Calibrated Initial Oxygen Concentration Distribution',
+          investigation: 'BASS-II',
+          metric_label: 'Calibrated Initial O₂',
+          unit: '% vol',
+          sample_count: 129,
+          missing_count: 0,
+          stats: { min: 14.2, max: 29.8, mean: 19.6, median: 19.4, std: 3.2 },
+          bins: [
+            { bin_range: '10–15%', bin_start: 10, bin_end: 15, count: 12, percentage: 9.3 },
+            { bin_range: '15–20%', bin_start: 15, bin_end: 20, count: 68, percentage: 52.7 },
+            { bin_range: '20–25%', bin_start: 20, bin_end: 25, count: 37, percentage: 28.7 },
+            { bin_range: '25%+', bin_start: 25, bin_end: 35, count: 12, percentage: 9.3 },
+          ],
+        },
+        o2_consumption_scatter: {
+          title: 'Initial vs Final Oxygen Concentration (ΔO₂ Depletion)',
+          investigation: 'BASS-II',
+          x_label: 'Calibrated Initial O₂',
+          x_unit: '% vol',
+          y_label: 'Calibrated Final O₂',
+          y_unit: '% vol',
+          sample_count: bassTests.length,
+          missing_count: 0,
+          points: bassTests.map((e) => ({
+            test_id: e.id,
+            fuel: e.material,
+            x: e.initialOxygenPercent || 21,
+            y: (e.initialOxygenPercent || 21) - 1.2,
+            secondary_val: 1.2,
+          })),
+        },
+        combustion_products_scatter: {
+          title: 'Combustion Effluents: Final CO₂ (%) vs Final CO (ppm)',
+          investigation: 'BASS-II',
+          x_label: 'Final CO₂ Concentration',
+          x_unit: '% vol',
+          y_label: 'Final CO Concentration',
+          y_unit: 'ppm',
+          sample_count: bassTests.length,
+          missing_count: 0,
+          points: bassTests.map((e) => ({
+            test_id: e.id,
+            fuel: e.material,
+            x: 0.8,
+            y: 45,
+          })),
+        },
+      },
     };
   },
 };

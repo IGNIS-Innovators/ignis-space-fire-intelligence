@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { ConceptFlameLab3D } from '../components/visuals/ConceptFlameLab3D';
+import { HybridCombustionChamber } from '../components/visuals/HybridCombustionChamber';
 import { dataSource } from '../services/dataSource';
 import { PredictionInputs, PredictionResult } from '../types/experiment';
 import { mmhgToKpa, percentToMoleFraction } from '../services/apiAdapter';
@@ -120,11 +120,10 @@ export const PredictiveLab: React.FC = () => {
                       key={fuel}
                       type="button"
                       onClick={() => setInputs({ ...inputs, fuel })}
-                      className={`py-2 px-3 rounded-lg border text-center transition-all ${
-                        inputs.fuel === fuel
-                          ? 'bg-ignis-orange text-white border-ignis-orange font-bold shadow-[0_0_10px_rgba(255,100,28,0.3)]'
-                          : 'bg-[#0E1726] text-gray-300 border-[#213047] hover:border-gray-500'
-                      }`}
+                      className={`py-2 px-3 rounded-lg border text-center transition-all ${inputs.fuel === fuel
+                        ? 'bg-ignis-orange text-white border-ignis-orange font-bold shadow-[0_0_10px_rgba(255,100,28,0.3)]'
+                        : 'bg-[#0E1726] text-gray-300 border-[#213047] hover:border-gray-500'
+                        }`}
                     >
                       {fuel}
                     </button>
@@ -253,15 +252,15 @@ export const PredictiveLab: React.FC = () => {
           </button>
         </div>
 
-        {/* Center Column: 3D Interactive Combustion Chamber */}
+        {/* Center Column: Hybrid Combustion Chamber (Chamber Photo + Animated Flame mapped to ML K) */}
         <div className="lg:col-span-4 glass-panel rounded-2xl p-4 flex flex-col justify-between min-h-[460px]">
-          <div className="h-full relative rounded-xl overflow-hidden bg-[#070D1A] border border-[#213047]">
-            <ConceptFlameLab3D
-              oxygenLevel={inputs.oxygenPercentage}
-              dropletDiameter={inputs.initialDropletDiameterMm}
-              interactive
-            />
-          </div>
+          <HybridCombustionChamber
+            predictedK={result?.predictedBurningRateConstant ?? null}
+            fuel={inputs.fuel}
+            oxygenLevel={inputs.oxygenPercentage}
+            dropletDiameter={inputs.initialDropletDiameterMm}
+            loading={loading}
+          />
         </div>
 
         {/* Right Column: Real ML Prediction Output Panel */}
