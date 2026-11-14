@@ -493,6 +493,472 @@ class ExperimentRepository:
             "chart_series": chart_series,
         }
 
+    def get_analytics(
+        self,
+        investigation: Optional[str] = "all",
+        fuel: Optional[str] = "all",
+    ) -> Dict[str, Any]:
+        """
+        Calculates authentic scientific analytics across all experimental records
+        without fabrication or arbitrary pagination limits.
+        """
+        if not self._is_loaded:
+            return {
+                "investigation_filter": str(investigation),
+                "fuel_filter": str(fuel),
+                "total_records_analyzed": 0,
+                "provenance": "NASA PSI Archives",
+                "scientific_notice": "Datasets not loaded.",
+                "flex": None,
+                "bass": None,
+            }
+
+        inv_filter = (investigation or "all").strip().lower()
+        fuel_filter = (fuel or "all").strip().lower()
+
+        # Helper: clean float
+        def to_f(v, digits=4):
+            if pd.isnull(v):
+                return None
+            try:
+                f = float(v)
+                return round(f, digits) if not np.isnan(f) else None
+            except (ValueError, TypeError):
+                return None
+
+        # Apply fuel filter to FLEX dataframe if specified
+        flex_df = self._flex_df.copy()
+        if fuel_filter != "all":
+            flex_df = flex_df[flex_df["fuel"].str.lower().str.contains(fuel_filter, na=False)]
+
+        # Apply material filter to BASS dataframe if specified
+        bass_df = self._bass_df.copy()
+        if fuel_filter != "all":
+            bass_df = bass_df[bass_df["fuel_base_material"].str.lower().str.contains(fuel_filter, na=False)]
+
+        # ---------------------------------------------------------------------
+        # 1. FLEX Scientific Analytics
+        # ---------------------------------------------------------------------
+        flex_analytics = None
+        if inv_filter in ["all", "flex", "psi-69"]:
+            # Helper: clean float
+            def to_f(v, digits=4):
+                if pd.isnull(v):
+                    return None
+                try:
+                    f = float(v)
+                    return round(f, digits) if not np.isnan(f) else None
+                except (ValueError, TypeError):
+                    return None
+
+            # 1a. O2 vs Burning Rate
+            o2_br_mask = flex_df["o2_mole_fraction"].notnull() & flex_df["burning_rate_mm2_s"].notnull() & (flex_df["burning_rate_mm2_s"] > 0)
+            o2_br_df = flex_df[o2_br_mask]
+            o2_br_pts = []
+            for _, r in o2_br_df.iterrows():
+                o2_val = to_f(r["o2_mole_fraction"], 4)
+                br_val = to_f(r["burning_rate_mm2_s"], 4)
+                if o2_val is not None and br_val is not None:
+                    d0 = to_f(r.get("droplet_initial_diameter_mm"), 2)
+                    p_kpa = to_f(r.get("ambient_pressure_kpa"), 2)
+                    o2_br_pts.append({
+                        "test_id": f"FLEX-{int(r['test_id'])}",
+                        "fuel": str(r["fuel"]),
+                        "x": o2_val,
+                        "y": br_val,
+                        "secondary_val": d0,
+                        "extra": {"o2_pct": round(o2_val * 100.0, 2), "pressure_kpa": p_kpa},
+                    })
+
+            # Calculate Pearson correlation for Methanol and Heptane
+            corrs = {}
+            for f_name in ["Methanol", "Heptane"]:
+                sub = o2_br_df[o2_br_df["fuel"].str.lower() == f_name.lower()]
+                if len(sub) > 2:
+                    r_val = sub["o2_mole_fraction"].corr(sub["burning_rate_mm2_s"])
+                    if pd.notnull(r_val):
+                        corrs[f_name] = round(float(r_val), 3)
+
+            o2_vs_br = {
+                "title": "Oxygen Mole Fraction vs Burning Rate Constant K",
+                "investigation": "FLEX",
+                "x_label": "Initial Ambient O₂ Mole Fraction",
+                "x_unit": "mole fraction",
+                "y_label": "Burning Rate Constant (K)",
+                "y_unit": "mm²/s",
+                "sample_count": len(o2_br_pts),
+                "missing_count": len(flex_df) - len(o2_br_pts),
+                "points": o2_br_pts,
+                "correlations": corrs,
+                "notes": "Classic d²-law regression: burning rate increases monotonically with ambient oxygen concentration due to enhanced gas-phase diffusion flame kinetics.",
+            }
+
+            # 1b. Pressure vs Burning Rate
+            p_br_mask = flex_df["ambient_pressure_kpa"].notnull() & flex_df["burning_rate_mm2_s"].notnull() & (flex_df["burning_rate_mm2_s"] > 0)
+            p_br_df = flex_df[p_br_mask]
+            p_br_pts = []
+            for _, r in p_br_df.iterrows():
+                p_val = to_f(r["ambient_pressure_kpa"], 2)
+                br_val = to_f(r["burning_rate_mm2_s"], 4)
+                if p_val is not None and br_val is not None:
+                    p_br_pts.append({
+                        "test_id": f"FLEX-{int(r['test_id'])}",
+                        "fuel": str(r["fuel"]),
+                        "x": p_val,
+                        "y": br_val,
+                        "secondary_val": to_f(r.get("droplet_initial_diameter_mm"), 2),
+                        "extra": {"pressure_mmhg": to_f(r.get("ambient_pressure_mmhg"), 1)},
+                    })
+
+            p_vs_br = {
+                "title": "Ambient Chamber Pressure vs Burning Rate Constant K",
+                "investigation": "FLEX",
+                "x_label": "Ambient Pressure",
+                "x_unit": "kPa",
+                "y_label": "Burning Rate Constant (K)",
+                "y_unit": "mm²/s",
+                "sample_count": len(p_br_pts),
+                "missing_count": len(flex_df) - len(p_br_pts),
+                "points": p_br_pts,
+                "correlations": None,
+                "notes": "Pressure spans 40 kPa to 300 kPa inside the Combustion Integrated Rack (CIR). Higher ambient pressures elevate radiative soot emission for alkane fuels.",
+            }
+
+            # 1c. Droplet Initial Diameter vs Burning Rate
+            d_br_mask = flex_df["droplet_initial_diameter_mm"].notnull() & flex_df["burning_rate_mm2_s"].notnull() & (flex_df["burning_rate_mm2_s"] > 0)
+            d_br_df = flex_df[d_br_mask]
+            d_br_pts = []
+            for _, r in d_br_df.iterrows():
+                d_val = to_f(r["droplet_initial_diameter_mm"], 3)
+                br_val = to_f(r["burning_rate_mm2_s"], 4)
+                if d_val is not None and br_val is not None:
+                    d_br_pts.append({
+                        "test_id": f"FLEX-{int(r['test_id'])}",
+                        "fuel": str(r["fuel"]),
+                        "x": d_val,
+                        "y": br_val,
+                        "secondary_val": to_f(r.get("burn_time_s"), 2),
+                        "extra": {"test_end": str(r.get("test_end", ""))},
+                    })
+
+            d_vs_br = {
+                "title": "Initial Droplet Diameter (d₀) vs Burning Rate Constant K",
+                "investigation": "FLEX",
+                "x_label": "Initial Droplet Diameter (d₀)",
+                "x_unit": "mm",
+                "y_label": "Burning Rate Constant (K)",
+                "y_unit": "mm²/s",
+                "sample_count": len(d_br_pts),
+                "missing_count": len(flex_df) - len(d_br_pts),
+                "points": d_br_pts,
+                "correlations": None,
+                "notes": "Initial droplet diameters range between 1.0 mm and 4.0 mm, generated via MDCA dispensing needles in ISS microgravity.",
+            }
+
+            # 1d. Burn Time Distribution
+            valid_tb = flex_df["burn_time_s"].dropna()
+            valid_tb = valid_tb[valid_tb > 0]
+            tb_stats = {
+                "min": round(float(valid_tb.min()), 2) if len(valid_tb) else 0.0,
+                "max": round(float(valid_tb.max()), 2) if len(valid_tb) else 0.0,
+                "mean": round(float(valid_tb.mean()), 2) if len(valid_tb) else 0.0,
+                "median": round(float(valid_tb.median()), 2) if len(valid_tb) else 0.0,
+                "std": round(float(valid_tb.std()), 2) if len(valid_tb) else 0.0,
+            }
+
+            # Create standard bins (0-5s, 5-10s, 10-15s, 15-20s, 20-25s, 25s+)
+            tb_bins = []
+            bin_defs = [(0, 5), (5, 10), (10, 15), (15, 20), (20, 25), (25, 45)]
+            total_tb = len(valid_tb)
+            for b_start, b_end in bin_defs:
+                if b_end == 45:
+                    c = int((valid_tb >= b_start).sum())
+                    label = f"{b_start}s+"
+                else:
+                    c = int(((valid_tb >= b_start) & (valid_tb < b_end)).sum())
+                    label = f"{b_start}–{b_end}s"
+                pct = round((c / total_tb * 100.0), 1) if total_tb > 0 else 0.0
+                tb_bins.append({
+                    "bin_range": label,
+                    "bin_start": float(b_start),
+                    "bin_end": float(b_end),
+                    "count": c,
+                    "percentage": pct,
+                })
+
+            burn_time_dist = {
+                "title": "Burn Duration Distribution (tb)",
+                "investigation": "FLEX",
+                "metric_label": "Combustion Duration",
+                "unit": "s",
+                "sample_count": total_tb,
+                "missing_count": len(flex_df) - total_tb,
+                "stats": tb_stats,
+                "bins": tb_bins,
+                "notes": "Burn duration scales approximately quadratically with initial droplet diameter (tb ≈ d₀²/K).",
+            }
+
+            # 1e. Test End Outcomes
+            outcome_counts = flex_df["test_end"].value_counts().to_dict()
+            total_outcomes = sum(outcome_counts.values())
+            outcome_colors = {
+                "Extinction": "#FF6B35",
+                "Disruption": "#40C9FF",
+                "Completion": "#2EE59D",
+            }
+            outcome_descs = {
+                "Extinction": "Radiative or diffusive flame quenching prior to full liquid depletion.",
+                "Disruption": "Micro-explosive droplet rupture or tether detachment.",
+                "Completion": "Uninterrupted combustion through complete droplet vaporization.",
+            }
+            outcome_items = []
+            for name, cnt in outcome_counts.items():
+                pct = round((cnt / total_outcomes * 100.0), 1) if total_outcomes > 0 else 0.0
+                outcome_items.append({
+                    "name": str(name),
+                    "count": int(cnt),
+                    "percentage": pct,
+                    "color": outcome_colors.get(str(name), "#9FB0C8"),
+                    "description": outcome_descs.get(str(name), "Recorded termination condition."),
+                })
+
+            outcomes_data = {
+                "title": "FLEX Test Termination Modes",
+                "investigation": "FLEX",
+                "sample_count": total_outcomes,
+                "missing_count": len(flex_df) - total_outcomes,
+                "items": outcome_items,
+                "notes": "Extinction is the dominant outcome in microgravity due to accumulation of combustion products and radiative loss.",
+            }
+
+            # 1f. Fuel Type Distribution
+            fuel_counts = flex_df["fuel"].value_counts().to_dict()
+            total_fuels = sum(fuel_counts.values())
+            fuel_colors = {"Methanol": "#40C9FF", "Heptane": "#FF8A50"}
+            fuel_notes = {
+                "Methanol": "Alcohol fuel; burns with nearly invisible blue flame, low soot, high water vapor production.",
+                "Heptane": "Alkane fuel; exhibits heavy soot formation, pronounced yellow luminosity, and strong radiative cooling.",
+            }
+            fuel_items = []
+            for name, cnt in fuel_counts.items():
+                pct = round((cnt / total_fuels * 100.0), 1) if total_fuels > 0 else 0.0
+                fuel_items.append({
+                    "name": str(name),
+                    "count": int(cnt),
+                    "percentage": pct,
+                    "color": fuel_colors.get(str(name), "#FFD29D"),
+                    "description": fuel_notes.get(str(name), "Standard NASA research fuel."),
+                })
+
+            fuels_data = {
+                "title": "FLEX Liquid Fuel Selection",
+                "investigation": "FLEX",
+                "sample_count": total_fuels,
+                "missing_count": len(flex_df) - total_fuels,
+                "items": fuel_items,
+                "notes": "Verified authentic records from NASA PSI-69 archive.",
+            }
+
+            flex_analytics = {
+                "investigation": "FLEX",
+                "psi_reference": "PSI-69",
+                "total_records": len(flex_df),
+                "o2_vs_burning_rate": o2_vs_br,
+                "pressure_vs_burning_rate": p_vs_br,
+                "diameter_vs_burning_rate": d_vs_br,
+                "burn_time_distribution": burn_time_dist,
+                "outcomes": outcomes_data,
+                "fuels": fuels_data,
+            }
+
+        # ---------------------------------------------------------------------
+        # 2. BASS-II Scientific Analytics
+        # ---------------------------------------------------------------------
+        bass_analytics = None
+        if inv_filter in ["all", "bass-ii", "bass", "psi-25"]:
+            # 2a. Material Distribution
+            mat_counts = bass_df["fuel_base_material"].value_counts().to_dict()
+            total_mats = sum(mat_counts.values())
+            mat_colors = {
+                "PMMA": "#FF6B35",
+                "SIBAL": "#40C9FF",
+                "Nomex": "#C084FC",
+                "Wax": "#FFE57A",
+            }
+            mat_items = []
+            for name, cnt in mat_counts.items():
+                pct = round((cnt / total_mats * 100.0), 1) if total_mats > 0 else 0.0
+                mat_items.append({
+                    "name": str(name),
+                    "count": int(cnt),
+                    "percentage": pct,
+                    "color": mat_colors.get(str(name), "#9FB0C8"),
+                    "description": f"Solid fuel specimen tested in BASS flow duct.",
+                })
+
+            mat_data = {
+                "title": "BASS-II Solid Fuel Materials",
+                "investigation": "BASS-II",
+                "sample_count": total_mats,
+                "missing_count": len(bass_df) - total_mats,
+                "items": mat_items,
+                "notes": "PMMA (polymethyl methacrylate) and SIBAL (cotton/fiberglass fabric) are primary spaceflight flammability standards.",
+            }
+
+            # 2b. Geometry Distribution
+            geo_counts = bass_df["fuel_geometry"].value_counts().to_dict()
+            total_geos = sum(geo_counts.values())
+            geo_items = []
+            for name, cnt in geo_counts.items():
+                pct = round((cnt / total_geos * 100.0), 1) if total_geos > 0 else 0.0
+                geo_items.append({
+                    "name": str(name),
+                    "count": int(cnt),
+                    "percentage": pct,
+                    "color": "#38BDF8" if "rod" in str(name).lower() else "#F97316",
+                    "description": "Specimen configuration inside duct.",
+                })
+
+            geo_data = {
+                "title": "BASS-II Specimen Geometries",
+                "investigation": "BASS-II",
+                "sample_count": total_geos,
+                "missing_count": len(bass_df) - total_geos,
+                "items": geo_items,
+                "notes": "Cylindrical rods test axisymmetric flame spread; flat sheets test boundary-layer stagnation flow.",
+            }
+
+            # 2c. Initial O2 Distribution
+            valid_o2 = bass_df["calibrated_initial_o2_pct"].dropna()
+            total_o2 = len(valid_o2)
+            o2_stats = {
+                "min": round(float(valid_o2.min()), 2) if total_o2 else 0.0,
+                "max": round(float(valid_o2.max()), 2) if total_o2 else 0.0,
+                "mean": round(float(valid_o2.mean()), 2) if total_o2 else 0.0,
+                "median": round(float(valid_o2.median()), 2) if total_o2 else 0.0,
+                "std": round(float(valid_o2.std()), 2) if total_o2 else 0.0,
+            }
+
+            # Bins for initial O2: 10-15%, 15-20%, 20-25%, 25-30%, 30%+
+            o2_bins = []
+            for b_start, b_end in [(10, 15), (15, 20), (20, 25), (25, 30), (30, 45)]:
+                if b_end == 45:
+                    c = int((valid_o2 >= b_start).sum())
+                    lbl = f"{b_start}%+"
+                else:
+                    c = int(((valid_o2 >= b_start) & (valid_o2 < b_end)).sum())
+                    lbl = f"{b_start}–{b_end}%"
+                pct = round((c / total_o2 * 100.0), 1) if total_o2 > 0 else 0.0
+                o2_bins.append({
+                    "bin_range": lbl,
+                    "bin_start": float(b_start),
+                    "bin_end": float(b_end),
+                    "count": c,
+                    "percentage": pct,
+                })
+
+            init_o2_dist = {
+                "title": "Calibrated Initial Oxygen Concentration Distribution",
+                "investigation": "BASS-II",
+                "metric_label": "Calibrated Initial O₂",
+                "unit": "% vol",
+                "sample_count": total_o2,
+                "missing_count": len(bass_df) - total_o2,
+                "stats": o2_stats,
+                "bins": o2_bins,
+                "notes": "Oxygen levels are calibrated using electrochemical sensors in the Microgravity Science Glovebox (MSG).",
+            }
+
+            # 2d. Initial vs Final O2 Consumption Scatter
+            mask_delta = bass_df["calibrated_initial_o2_pct"].notnull() & bass_df["calibrated_final_o2_pct"].notnull()
+            delta_df = bass_df[mask_delta]
+            delta_pts = []
+            for _, r in delta_df.iterrows():
+                i_o2 = to_f(r["calibrated_initial_o2_pct"], 2)
+                f_o2 = to_f(r["calibrated_final_o2_pct"], 2)
+                if i_o2 is not None and f_o2 is not None:
+                    delta = round(i_o2 - f_o2, 2)
+                    delta_pts.append({
+                        "test_id": f"BASS-II-{r['test_id']}",
+                        "fuel": str(r["fuel_base_material"]),
+                        "x": i_o2,
+                        "y": f_o2,
+                        "secondary_val": delta,
+                        "extra": {"delta_o2": delta, "flow_restrictor": int(r.get("flow_restrictor", 0))},
+                    })
+
+            o2_delta_data = {
+                "title": "Initial vs Final Oxygen Concentration (ΔO₂ Depletion)",
+                "investigation": "BASS-II",
+                "x_label": "Calibrated Initial O₂",
+                "x_unit": "% vol",
+                "y_label": "Calibrated Final O₂",
+                "y_unit": "% vol",
+                "sample_count": len(delta_pts),
+                "missing_count": len(bass_df) - len(delta_pts),
+                "points": delta_pts,
+                "correlations": None,
+                "notes": "Drop from initial to final O₂ indicates total oxygen consumed during flame spread prior to extinction or fan shutdown.",
+            }
+
+            # 2e. Combustion Byproducts (CO2 vs CO)
+            co_mask = bass_df["final_co2_pct"].notnull() & bass_df["final_co_ppm"].notnull()
+            co_df = bass_df[co_mask]
+            co_pts = []
+            for _, r in co_df.iterrows():
+                co2_val = to_f(r["final_co2_pct"], 2)
+                co_val = to_f(r["final_co_ppm"], 1)
+                if co2_val is not None and co_val is not None:
+                    co_pts.append({
+                        "test_id": f"BASS-II-{r['test_id']}",
+                        "fuel": str(r["fuel_base_material"]),
+                        "x": co2_val,
+                        "y": co_val,
+                        "secondary_val": to_f(r.get("calibrated_initial_o2_pct"), 1),
+                        "extra": {"initial_co_ppm": to_f(r.get("initial_co_ppm"), 1)},
+                    })
+
+            co_products_data = {
+                "title": "Combustion Effluents: Final CO₂ (%) vs Final CO (ppm)",
+                "investigation": "BASS-II",
+                "x_label": "Final CO₂ Concentration",
+                "x_unit": "% vol",
+                "y_label": "Final CO Concentration",
+                "y_unit": "ppm",
+                "sample_count": len(co_pts),
+                "missing_count": len(bass_df) - len(co_pts),
+                "points": co_pts,
+                "correlations": None,
+                "notes": "Elevated CO levels indicate incomplete combustion and smoldering tendency in low-velocity microgravity airflows.",
+            }
+
+            bass_analytics = {
+                "investigation": "BASS-II",
+                "psi_reference": "PSI-25",
+                "total_records": len(bass_df),
+                "material_distribution": mat_data,
+                "geometry_distribution": geo_data,
+                "initial_o2_distribution": init_o2_dist,
+                "o2_consumption_scatter": o2_delta_data,
+                "combustion_products_scatter": co_products_data,
+            }
+
+        total_analyzed = (len(flex_df) if flex_analytics else 0) + (len(bass_df) if bass_analytics else 0)
+
+        return {
+            "investigation_filter": investigation or "all",
+            "fuel_filter": fuel or "all",
+            "total_records_analyzed": total_analyzed,
+            "provenance": "NASA Physical Sciences Informatics (PSI-69 FLEX & PSI-25 BASS-II)",
+            "scientific_notice": (
+                "All statistical analytics computed directly from authentic flight experiment tables. "
+                "Liquid droplet combustion (FLEX) and solid surface flame spread (BASS-II) are analyzed in separate "
+                "regimes due to non-commensurate physical mechanisms."
+            ),
+            "flex": flex_analytics,
+            "bass": bass_analytics,
+        }
+
 
 # Singleton instance
 repository = ExperimentRepository()

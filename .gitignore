@@ -26,6 +26,7 @@ eggs/
 .eggs/
 lib/
 lib64/
+!frontend/src/lib/
 parts/
 sdist/
 var/
@@ -72,6 +73,7 @@ frontend/dist-ssr/
 # Editor / Vite cache
 .vite/
 .eslintcache
+*.tsbuildinfo
 
 # ----------------------------------------------------------------------------
 # Datasets & ML Artifacts

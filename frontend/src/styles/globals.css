@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #050B18;
+  --bg-deep: #030710;
+  --sidebar: #070D1B;
+  --surface: #0B1528;
+  --surface-2: #0F1E38;
+  --border: #1E3252;
+  --border-light: #2B4670;
+  --text: #EAF2FF;
+  --muted: #9FB0C8;
+  --orange: #FF6B35;
+  --orange-hot: #FF8A50;
+  --cyan: #40C9FF;
+  --green: #2EE59D;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Custom Mission Control scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050B18;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E3252;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B35;
+}
+
+/* -------------------------------------------------------------------------
+   Deep Space Base
+   ------------------------------------------------------------------------- */
+.galaxy-canvas-container {
+  background-color: #030712;
+}
+
+/* -------------------------------------------------------------------------
+   Glassmorphism Surfaces & Mission Control Panels
+   ------------------------------------------------------------------------- */
+.glass-panel {
+  background: rgba(11, 21, 40, 0.74);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(30, 50, 82, 0.85);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(234, 242, 255, 0.04);
+}
+
+.glass-panel:hover {
+  border-color: rgba(43, 70, 112, 0.95);
+}
+
+.glass-panel-glow {
+  background: rgba(11, 21, 40, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 107, 53, 0.35);
+  box-shadow: 0 0 30px rgba(255, 107, 53, 0.16), 0 16px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 107, 53, 0.15);
+}
+
+.glass-panel-cyan {
+  background: rgba(11, 21, 40, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(64, 201, 255, 0.35);
+  box-shadow: 0 0 30px rgba(64, 201, 255, 0.15), 0 16px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(64, 201, 255, 0.15);
+}
+
+/* Mission Control Action Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8A50 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.55rem 1.15rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 16px rgba(255, 107, 53, 0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 138, 80, 0.6);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #FF7B48 0%, #FF9E6C 100%);
+  box-shadow: 0 4px 22px rgba(255, 107, 53, 0.55);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(15, 30, 56, 0.75);
+  color: #EAF2FF;
+  border: 1px solid #1E3252;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.55rem 1.15rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(22, 43, 78, 0.85);
+  border-color: #2B4670;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+/* Ambient glow pulses */
+@keyframes ambientPulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.animate-ambient-pulse {
+  animation: ambientPulse 8s ease-in-out infinite;
+}

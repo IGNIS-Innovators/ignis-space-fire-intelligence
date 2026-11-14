@@ -260,6 +260,50 @@ class TestIgnisApi(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.headers.get("access-control-allow-origin"), "http://localhost:5173")
 
+    # -------------------------------------------------------------------------
+    # 9. Scientific Data Analytics
+    # -------------------------------------------------------------------------
+    def test_analytics_all_endpoint(self):
+        """Verify comprehensive analytics across all 403 NASA flight trials."""
+        res = self.client.get("/api/analytics")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["total_records_analyzed"], 403)
+        self.assertIsNotNone(data["flex"])
+        self.assertIsNotNone(data["bass"])
+
+        # FLEX charts integrity
+        flex = data["flex"]
+        self.assertEqual(flex["total_records"], 274)
+        self.assertEqual(flex["o2_vs_burning_rate"]["sample_count"], 258)
+        self.assertEqual(flex["o2_vs_burning_rate"]["y_unit"], "mm²/s")
+        self.assertGreater(len(flex["o2_vs_burning_rate"]["points"]), 200)
+        self.assertEqual(len(flex["outcomes"]["items"]), 3)
+        self.assertEqual(len(flex["fuels"]["items"]), 2)
+
+        # BASS-II charts integrity
+        bass = data["bass"]
+        self.assertEqual(bass["total_records"], 129)
+        self.assertEqual(bass["initial_o2_distribution"]["sample_count"], 129)
+        self.assertGreater(len(bass["material_distribution"]["items"]), 0)
+        self.assertGreater(len(bass["o2_consumption_scatter"]["points"]), 100)
+
+    def test_analytics_investigation_filter(self):
+        """Verify analytics filters strictly by investigation."""
+        res_flex = self.client.get("/api/analytics?investigation=FLEX")
+        self.assertEqual(res_flex.status_code, 200)
+        data_flex = res_flex.json()
+        self.assertEqual(data_flex["total_records_analyzed"], 274)
+        self.assertIsNotNone(data_flex["flex"])
+        self.assertIsNone(data_flex["bass"])
+
+        res_bass = self.client.get("/api/analytics?investigation=BASS-II")
+        self.assertEqual(res_bass.status_code, 200)
+        data_bass = res_bass.json()
+        self.assertEqual(data_bass["total_records_analyzed"], 129)
+        self.assertIsNone(data_bass["flex"])
+        self.assertIsNotNone(data_bass["bass"])
+
 
 if __name__ == "__main__":
     unittest.main()
