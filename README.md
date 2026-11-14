@@ -1,187 +1,97 @@
-# IGNIS — Space Fire Intelligence 🔥🚀
+# IGNIS — FINAL NASA SPACE APPS README UPDATE
 
-> **NASA Space Apps Challenge**  
-> *Intelligent combustion diagnostics, historical microgravity experiment search, and predictive flame dynamics for space exploration safety.*
+Update the root `README.md` for the final NASA Space Apps Challenge 2026 submission.
 
----
+**This is a documentation-only task. Do not modify application code.**
 
-## 1. Project Overview
+## 1. Correct all outdated information
 
-Fire behaves fundamentally differently in microgravity. Without buoyant natural convection, flames become spherical, soot dynamics diverge, and extinction limits become non-intuitive. Understanding microgravity combustion is mission-critical for crew safety aboard spacecraft, space stations, and lunar/Martian habitats.
+Inspect the actual repository and document what has genuinely been implemented.
 
-**IGNIS** is an intelligence platform designed to:
-1. Index and process genuine NASA combustion experiment data (such as BASS, FLEX, and CIR archives).
-2. Enable intelligent, parameter-driven search across decades of space fire experiments.
-3. Deliver AI-assisted combustion telemetry insights and anomaly detection.
-4. Model predictive flame behavior under variable atmospheric and gravitational conditions.
-5. Provide space researchers with an interactive 2D visualization lab and experiment submission workflow.
+Replace outdated "Planned Implementation" labels with accurate implementation statuses.
 
----
+Document the actual IGNIS features:
 
-## 2. Real Functionality vs. UI Prototype Status
+- Mission Control Dashboard
+- Experiment Explorer — 403 NASA PSI records from FLEX and BASS-II
+- Data Analytics — data-driven charts and distributions
+- Compare Experiments
+- Predictive Lab — machine-learning prediction of droplet burning rate constant K (mm²/s)
+- AI Insights — evidence-linked research insights
+- Submit New Experiment — future concept only, not connected to NASA
 
-To ensure scientific integrity throughout development, the project maintains a strict boundary between real implemented functionality and prototype UI layers:
+Do not claim that the application predicts actual flame geometry, ignition probability, or certified spacecraft safety ratings.
 
-| Capability / Module | Layer | Status | Description |
-| :--- | :--- | :--- | :--- |
-| **NASA Data Pipeline** | Backend | Planned Implementation | Ingestion & normalization of real NASA microgravity burn records. |
-| **Experiment Search API** | Backend | Planned Implementation | Multi-parameter filtering (pressure, O2%, fuel type) with FastAPI. |
-| **Combustion Telemetry Analysis**| Backend | Planned Implementation | Telemetry interpretation and extinction limit identification. |
-| **Predictive Combustion Modeling**| Backend | Planned Implementation | Physics-informed and empirical models for flame spread & extinction. |
-| **Interactive 2D Flame Canvas** | Frontend | Planned UI Prototype | Visual representation of spherical microgravity flames & spread vectors. |
-| **Multi-Experiment Comparison UI**| Frontend | Planned UI Prototype | Side-by-side telemetry diffing, parameter tables, and visual overlays. |
-| **Predictive Lab Simulation UI** | Frontend | Planned UI Prototype | Reactive control sliders and visual parameter space charts. |
-| **Researcher Submission Portal** | Frontend | Planned UI Prototype | Guided form interface to configure and submit experiment protocols. |
+Explain that flame animations are illustrative visualizations, not physical simulations.
 
-> ⚠️ **Scientific Integrity Standard**: No synthetic NASA data or fabricated prediction values are permitted. UI prototypes will display explicit placeholder indicators until live backend services are connected.
+Clearly distinguish:
+- Locally functional frontend/backend integration
+- Frontend-only Vercel deployment
+- Future features
 
----
+## 2. Fix repository information
 
-## 3. Two-Laptop Architecture & Collaboration Workflow
+Correct repository URL everywhere:
 
-Development is distributed across two dedicated Windows laptops operating in a single shared GitHub repository:
+https://github.com/IGNIS-Innovators/ignis-space-fire-intelligence
 
-```
-┌────────────────────────────────────────────────────────┐
-│                   SHARED REPOSITORY                    │
-│        https://github.com/NASA-SpaceApps/ignis         │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-             ┌─────────────┴─────────────┐
-             ▼                           ▼
- ┌─────────────────────────┐ ┌─────────────────────────┐
- │        LAPTOP 1         │ │        LAPTOP 2         │
- │     AI & Backend        │ │        Frontend         │
- │                         │ │                         │
- │ • Python 3.10+ / FastAPI│ │ • React / Vite          │
- │ • NASA Data Processing  │ │ • Interactive 2D Canvas │
- │ • Search Services       │ │ • Comparison UI         │
- │ • Predictive Modeling   │ │ • Predictive Lab UI     │
- │ • Port: 8000            │ │ • Port: 5173            │
- └─────────────────────────┘ └─────────────────────────┘
-```
+Update the architecture, repository structure, backend startup commands, Python environment instructions, and frontend setup based on actual files.
 
-### Laptop 1: AI & Backend
-- **Focus Area**: `backend/`, `data/`, `docs/api/`, `docs/architecture/`
-- **Responsibilities**:
-  - FastAPI REST service (`backend/app/api/`)
-  - NASA data ingestion & parsing (`data/raw/` -> `data/processed/`)
-  - Intelligent search engine (`backend/app/services/search/`)
-  - AI telemetry insights (`backend/app/services/insights/`)
-  - Predictive combustion modeling (`backend/app/services/prediction/`)
+Remove obsolete references to an unimplemented 2D flame canvas and planned-only backend.
 
-### Laptop 2: Frontend
-- **Focus Area**: `frontend/`, `design/`, `docs/demo/`
-- **Responsibilities**:
-  - React + Vite development setup (`frontend/`)
-  - Interactive 2D fire visualization dashboard
-  - Comparative experiment matrix & charting
-  - Predictive laboratory user interface
-  - Researcher experiment proposal and submission portal
-  - API client adapters (`frontend/src/services/`)
+## 3. Add a professional Resources & References section
 
----
+Use these official links:
 
-## 4. Repository Structure
+**NASA Space Apps Challenge — Flame in Freefall**
+https://www.spaceappschallenge.org/2026/challenges/flame-in-freefall/
 
-```text
-ignis-space-fire-intelligence/
-├── frontend/                     # Laptop 2: React + Vite application
-│   ├── public/                   # Static assets, favicons, manifests
-│   └── src/
-│       ├── assets/               # Images, icons, SVGs
-│       ├── components/           # Reusable UI components
-│       ├── pages/                # Page views (Dashboard, Lab, Search, Submit)
-│       ├── services/             # API client services & contract adapters
-│       ├── hooks/                # Custom React hooks
-│       └── styles/               # CSS modules & global stylesheets
-│
-├── backend/                      # Laptop 1: Python FastAPI application
-│   ├── app/
-│   │   ├── api/                  # API routers & endpoint handlers
-│   │   ├── core/                 # App configuration, security, CORS, settings
-│   │   ├── schemas/              # Pydantic models & validation schemas
-│   │   └── services/
-│   │       ├── search/           # Experiment query & retrieval engine
-│   │       ├── insights/         # AI analysis & anomaly detection
-│   │       └── prediction/       # Microgravity combustion modeling
-│   ├── tests/                    # Unit, integration, and schema tests
-│   └── requirements.txt          # Python dependencies specification
-│
-├── data/                         # NASA datasets & schemas (Laptop 1)
-│   ├── raw/                      # Unprocessed NASA source records (gitignored)
-│   ├── processed/                # Normalized structured datasets (gitignored)
-│   └── samples/                  # Lightweight data schemas & sample records
-│
-├── docs/                         # Documentation & specifications
-│   ├── architecture/             # System diagrams, data pipeline docs
-│   ├── api/                      # REST API contract & endpoint schemas
-│   └── demo/                     # Presentation notes, screenshots, demo scripts
-│
-├── design/                       # UI/UX & Brand Identity (Laptop 2)
-│   └── branding/                 # Logos, color palettes, wireframes
-│
-├── README.md                     # Project overview and run guides
-├── AGENTS.md                     # Collaboration conventions & responsibilities
-├── .gitignore                    # Python, Node, data, and environment rules
-└── .env.example                  # Environment configuration template
-```
+**NASA Physical Sciences Informatics**
+https://science.nasa.gov/biological-physical/programs/physical-sciences/
 
----
+**NASA PSI Investigations (including FLEX and BASS-II)**
+https://www.nasa.gov/physical-sciences-informatics-psi/psi-investigations-by-research-area/
 
-## 5. Getting Started
+**NASA Science Open Data**
+https://science.nasa.gov/learn/entry-points-to-nasa-data/
 
-### Prerequisites
-- **Git**
-- **Laptop 1**: Python 3.10+
-- **Laptop 2**: Node.js 18+ & npm/pnpm
+**NASA Space Apps Challenge 2026**
+https://www.spaceappschallenge.org/2026/
 
-### Clone Repository
-```bash
-git clone https://github.com/NASA-SpaceApps/ignis-space-fire-intelligence.git
-cd ignis-space-fire-intelligence
-```
+Explain briefly how each resource relates to IGNIS.
 
-### Laptop 1 Setup (AI & Backend)
-```bash
-cd backend
-python -m venv .venv
-# On Windows:
-.venv\Scripts\activate
+Only describe FLEX and BASS-II as datasets actually processed if verified against the project files. Do not imply that other NASA investigations have been processed.
 
-# Install dependencies (when ready to begin feature work)
-pip install -r requirements.txt
+## 4. Add Project Links near the top
 
-# Configure environment
-cp ../.env.example ../.env
+- GitHub Repository: https://github.com/IGNIS-Innovators/ignis-space-fire-intelligence
+- Live Frontend Demo: add a clearly marked placeholder until the real Vercel URL is known
+- Official NASA Challenge: use the verified challenge link above
+- Demo Video: include a placeholder until the actual video URL is provided
 
-# Launch FastAPI server
-uvicorn app.api.main:app --reload --port 8000
-```
-Interactive API documentation will be available at: `http://localhost:8000/docs`
+## 5. Improve README presentation
 
-### Laptop 2 Setup (Frontend)
-```bash
-cd frontend
+Make it professional, concise, visually polished, and appropriate for NASA Space Apps judges.
 
-# Initialize dependencies (when ready to begin feature work)
-npm install
+Include:
+- Overview and problem statement
+- Our solution
+- Key features
+- Architecture and tech stack
+- Dataset provenance
+- Predictive model and scientific limitations
+- Installation instructions
+- Current implementation status
+- Future development
+- Official NASA references
+- Clear independent-team disclaimer; no suggestion of NASA endorsement
 
-# Start Vite development server
-npm run dev
-```
-The frontend interface will be available at: `http://localhost:5173`
+Preserve accurate project information. Do not invent performance metrics, source citations, team credentials, or deployment URLs.
 
----
+## 6. Final checks
 
-## 6. API Contract
+Verify the Markdown formatting, resource URLs, internal paths, and installation commands.
 
-The communication contract between Frontend and Backend is formally documented in:  
-[docs/api/contract.md](file:///docs/api/contract.md)
+Modify only `README.md`.
 
----
-
-## 7. Collaboration Guidelines
-
-Please review [AGENTS.md](file:///AGENTS.md) for branch naming strategies, commit conventions, scientific data rules, and cross-laptop synchronization protocols.
-
+Do not commit or push automatically.
